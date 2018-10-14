@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:19:21 pm
+ * Last Modified: Saturday, 13th October 2018 12:05:18 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -21,20 +21,23 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 // User is composed:
 // Claim are used for jwt token signature
 // Permission
 type User struct {
-	ID         string    `json:"id,omitempty"`
-	Name       string    `json:"name"`
-	Email      string    `json:"email"`
-	Password   string    `json:"password"`
-	Permission string    `json:"permission,omitempty"`
-	Claim      string    `json:"claim,omitempty"`
-	CreatedAt  time.Time `json:"createdAt,omitempty"`
-	UpdatedAt  time.Time `json:"updatedAt,omitempty"`
+	ObjectID   bson.ObjectId `bson:"_id,omitempty"`
+	ID         string        `json:"id,omitempty"`
+	Name       string        `json:"name"`
+	Email      string        `json:"email"`
+	Password   string        `json:"password"`
+	Permission string        `json:"permission,omitempty"`
+	Claim      string        `json:"claim,omitempty"`
+	createdAt  time.Time
+	updatedAt  time.Time
 }
 
 // ToString return string conversion of marshal user
@@ -42,6 +45,22 @@ type User struct {
 func (u *User) ToString() string {
 	ret, _ := u.Marshal()
 	return string(ret)
+}
+
+func (u *User) SetCreatedAt(now time.Time) {
+	u.createdAt = now
+}
+
+func (u *User) SetUpdatedAt(now time.Time) {
+	u.updatedAt = now
+}
+
+func (u User) GetCreatedAt() time.Time {
+	return u.createdAt
+}
+
+func (u User) GetUpdatedAt() time.Time {
+	return u.updatedAt
 }
 
 // UnmarshalFromRequest take a request object supposed to contain
