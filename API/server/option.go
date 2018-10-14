@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 5:46:47 pm
+ * Last Modified: Sunday, 14th October 2018 1:15:35 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -14,14 +14,17 @@
 package server
 
 type Option struct {
-	exe      string
-	env      string
-	debug    bool
-	logpath  string
-	datapath string
-	address  string
-	port     string
-	ip       string
+	exe       string
+	env       string
+	debug     bool
+	logpath   string
+	dbType    string
+	datapath  string
+	address   string
+	port      string
+	ip        string
+	mongoIP   string
+	mongoPort string
 }
 
 var (
@@ -30,14 +33,17 @@ var (
 	TEST = "test"
 )
 
-func (o *Option) Hydrate(port, ip, env, dir, logpath, datapath string, debug bool) {
+func (o *Option) Hydrate(port, ip, env, dir, logpath, dbType, datapath, mongoIP, mongoPort string, debug bool) {
 	o.port = port
 	o.ip = ip
 	o.datapath = datapath
+	o.dbType = dbType
 	o.logpath = logpath
 	o.env = env
 	o.debug = debug
 	o.exe = dir
+	o.mongoIP = mongoIP
+	o.mongoPort = mongoPort
 }
 
 // GetAddress concat ip and port and affect to address if needed
@@ -83,6 +89,10 @@ func (o *Option) GetLogpath() string {
 	return o.logpath
 }
 
+func (o *Option) GetDatabaseType() string {
+	return o.dbType
+}
+
 // GetDatapath return the path to data folder
 func (o *Option) GetDatapath() string {
 	return o.datapath
@@ -94,6 +104,22 @@ func (o *Option) GetEnv() string {
 		return DEV
 	}
 	return o.env
+}
+
+func (o *Option) GetMongoIP() string {
+	return o.mongoIP
+}
+
+func (o *Option) GetMongoPort() string {
+	return o.mongoPort
+}
+
+func (o *Option) SetMongoPort(port string) {
+	o.mongoPort = port
+}
+
+func (o *Option) SetDatabaseType(dbType string) {
+	o.dbType = dbType
 }
 
 // SetEnv allow a IServerOption to change the environnement
@@ -118,4 +144,8 @@ func (o *Option) SetLogpath(logpath string) {
 // SetDatapath allow IServerOption to change the path to data
 func (o *Option) SetDatapath(datapath string) {
 	o.datapath = datapath
+}
+
+func (o *Option) SetMongoIP(ip string) {
+	o.mongoIP = ip
 }
