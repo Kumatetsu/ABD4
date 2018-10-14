@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 9:00:37 pm
+ * Last Modified: Sunday, 14th October 2018 3:55:33 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 	dir := os.Getenv("GOPATH") + "/src/ABD4/API/test"
 	opts := &server.Option{}
 	port := strconv.Itoa(8001)
-	opts.Hydrate(port, "127.0.0.1", "test", dir, dir+"/log", dir+"/data", true)
+	opts.Hydrate(port, "127.0.0.1", "test", dir, dir+"/log", "mongo", dir+"/data", "127.0.0.1", "27017", true)
 	signal := make(chan bool)
 	os.Remove(opts.GetDatapath() + "/users.dat")
 	go launchTestApp(opts, signal)
@@ -56,6 +56,7 @@ func TestMain(m *testing.M) {
 		testApp.Ctx.Log.Info.Print("App initiliazed in go routine\n\n\n")
 	}
 	mock.Ctx = testApp.Ctx
+	testApp.Ctx.UserManager.RemoveAll()
 	mock.MockUsers(2)
 	code := m.Run()
 	// On delete les data pour repartir sur un context neat la prochaine fois
@@ -68,13 +69,6 @@ func TestUser(t *testing.T) {
 	var err error
 	assert := assert.New(t)
 	testSuite := &test.Suite{}
-	mock.PostUser = &model.User{
-		Name:       "register",
-		Email:      "regist_t@etna-alternance.net",
-		Password:   "register",
-		Permission: "permission",
-	}
-
 	for _, test := range testSuite.GetTests(mock) {
 		body := &strings.Reader{}
 		response := &server.Response{}

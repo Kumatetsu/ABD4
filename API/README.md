@@ -29,7 +29,10 @@ cd ABD4/API
 go get github.com/gorilla/mux
 go get github.com/dgrijalva/jwt-go
 go get github.com/stretchr/testify/assert
+// to use with BoltDb embedded key/value database
 go get github.com/boltdb/bolt/...
+// to use with MongoDB higly scalable document oriented database on distant server
+go get gopkg.in/mgo.v2
 go build ABD4/API
 ```
 
