@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 6:59:15 pm
+ * Last Modified: Friday, 12th October 2018 6:37:05 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -103,7 +103,7 @@ func (r Response) SendError(ctx *context.AppContext, w http.ResponseWriter, stat
 		w.Write([]byte(msg))
 		return
 	}
-	ctx.Log.Error.Print(msg)
+	ctx.Log.Error.Print(msg + " " + detail)
 	w.WriteHeader(r.Status)
 	w.Write(ret)
 	return

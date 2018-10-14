@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 9:56:42 pm
+ * Last Modified: Thursday, 11th October 2018 7:14:09 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -15,6 +15,7 @@ package handler
 
 import (
 	"ABD4/API/context"
+	"ABD4/API/database/boltdatabase"
 	"ABD4/API/utils"
 	"fmt"
 	"net/http"
@@ -25,7 +26,12 @@ import (
 
 // BackupBoltDatabase CustomHandler to allow to download the database content
 func BackupBoltDatabase(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
-	dbManager := ctx.UserManager.GetDBM()
+	if _, ok := ctx.UserManager.GetDB().(boltdatabase.DBManager); !ok {
+		msg := fmt.Sprintf("%s %s", utils.Use().GetStack(BackupBoltDatabase), "The embedded database don't allow backup")
+		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "Backup data failed", msg)
+		return
+	}
+	dbManager := ctx.UserManager.GetDB().(*boltdatabase.DBManager)
 	if err := dbManager.OpenDB(); err != nil {
 		return
 	}
