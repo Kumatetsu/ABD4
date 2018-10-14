@@ -3,7 +3,7 @@
 // A boltdb wrapper to encrypt and decrypt the values stored in the boltdb via AES Cryptor, and also provides
 // db operations functions
 //
-package database
+package boltdatabase
 
 import (
 	"bytes"
