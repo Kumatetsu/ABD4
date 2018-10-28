@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 7:14:54 pm
+ * Last Modified: Sunday, 28th October 2018 8:13:27 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -169,6 +169,20 @@ func getElasticRouting() []*Road {
 			Pattern:         "/reindex/{index}",
 			StatusProtected: false,
 			HandlerFunc:     handler.GetReindex,
+		},
+		{
+			Name:            GET + " /elastic/indexdata",
+			Method:          GET,
+			Pattern:         "/indexdata",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetIndexationData,
+		},
+		{
+			Name:            GET + " /elastic/indexdata/{index}",
+			Method:          GET,
+			Pattern:         "/indexdata/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetIndexData,
 		},
 	}
 }

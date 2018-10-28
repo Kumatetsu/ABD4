@@ -302,3 +302,84 @@ Response format:
   - return: message[string]
 
   - status: 202 | 500
+
+* GET /elastic/index/all
+
+  - protected: false
+
+  - action: elasticsearch.CreateIndexation
+
+  - return: indexes[string]
+
+  - status: 200 | 500
+
+* GET /elastic/index/{index}
+
+  - protected: false
+
+  - action: mux.Vars + elasticsearch.Index
+
+  - return: index[string]
+
+  - status: 200 | 400 | 500
+
+* GET /elastic/rmindex/all
+
+  - protected: false
+
+  - action: for on context.INDEXES, apply elasticsearch.RemoveIndex
+
+  - return: message[string]
+
+  - status: 200 | 500
+
+* GET /elastic/rmindex/{index}
+
+  - protected: false
+
+  - action: mux.Vars + elasticsearch.RemoveIndex
+
+  - return: message[string]
+
+  - status: 200 | 500
+
+* GET /elastic/reindex/all
+
+  - protected: false
+
+  - action: elasticsearch.CreateIndexation [reindex==true]
+
+  - return: message[string]
+
+  - status: 200 | 500
+
+* GET /elastic/reindex/{index}
+
+  - protected: false
+
+  - action: mux.Vars + elasticsearch.RemoveIndex + elasticsearch.Index
+
+  - return: message[string]
+
+  - status: 200 | 400 | 500
+
+* GET /elastic/indexdata
+
+  - protected: false
+
+  - handler: GetIndexationData
+
+  - return: message[string]
+
+  - status: 200 | 500
+
+GET /elastic/indexdata/{index}
+
+  - protected: false
+
+  - handler: GetIndexData
+
+  - return: message[string]
+
+  - status: 200 | 400 | 500
+

@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 1:22:06 pm
+ * Last Modified: Sunday, 28th October 2018 7:38:46 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -38,7 +38,7 @@ var (
 	TX      = "transaction"
 	TXs     = "transactions"
 	SECRET  = "==+VDMEG@ABD4"
-	INDEXES = []string{USERS, TXs}
+	INDEXES = map[string]string{USER: USERS, TX: TXs}
 )
 
 // logState log final parameters at the launch of API
