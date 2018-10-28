@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:19:21 pm
+ * Last Modified: Tuesday, 23rd October 2018 5:49:45 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,12 +19,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 )
 
 // Reservation is composed:
 type Reservation struct {
-	Spectateur 	Spectateur			`json:"Spectateur"`
-	Tarif		string				`json:"Tarif"`
+	Spectateur Spectateur `json:"Spectateur"`
+	Tarif      string     `json:"Tarif"`
+	mapped     map[string]interface{}
 }
 
 // ToString return string conversion of marshal user
@@ -50,6 +53,27 @@ func (reserv Reservation) UnmarshalFromRequest(r *http.Request) error {
 }
 
 // Marshal implement ISerial
-func (reserv *Reservation) Marshal() ([]byte, error) {
+func (reserv Reservation) Marshal() ([]byte, error) {
 	return json.Marshal(reserv)
+}
+
+func (reserv Reservation) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(reserv).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	reserv.mapped = mapped
+	return mapped
+}
+
+func (reserv Reservation) GetMapped() map[string]interface{} {
+	if len(reserv.mapped) == 0 {
+		reserv.toMap()
+	}
+	return reserv.mapped
 }

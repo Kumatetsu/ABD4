@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:19:21 pm
+ * Last Modified: Tuesday, 23rd October 2018 5:52:38 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,14 +19,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 )
 
 // Acheteur is composed:
 type TarifDefinition struct {
-	ID         	string    	`json:"ID"`
-	TarifType	string    	`json:"TarifType"`
-	Prix		int		  	`json:"Prix, float64"`
-	Date		string		`json:"Date"`
+	ID        string `json:"ID"`
+	TarifType string `json:"TarifType"`
+	Prix      int    `json:"Prix, float64"`
+	Date      string `json:"Date"`
+	mapped    map[string]interface{}
 }
 
 // ToString return string conversion of marshal user
@@ -52,6 +55,27 @@ func (tarifDef *TarifDefinition) UnmarshalFromRequest(r *http.Request) error {
 }
 
 // Marshal implement ISerial
-func (tarifDef *TarifDefinition) Marshal() ([]byte, error) {
+func (tarifDef TarifDefinition) Marshal() ([]byte, error) {
 	return json.Marshal(tarifDef)
+}
+
+func (tarifDef TarifDefinition) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(tarifDef).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	tarifDef.mapped = mapped
+	return mapped
+}
+
+func (tarifDef TarifDefinition) GetMapped() map[string]interface{} {
+	if len(tarifDef.mapped) == 0 {
+		tarifDef.toMap()
+	}
+	return tarifDef.mapped
 }

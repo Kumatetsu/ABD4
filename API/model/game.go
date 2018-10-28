@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:19:21 pm
+ * Last Modified: Tuesday, 23rd October 2018 5:48:06 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,14 +19,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 )
 
 // Game is composed:
 type Game struct {
-	Nom    	string    	`json:"Nom"`
-	Jour    string    	`json:"Jour"`
-	Horaire string    	`json:"Horaire"`
-	VR   	string		`json:"VR"`
+	Nom     string `json:"Nom"`
+	Jour    string `json:"Jour"`
+	Horaire string `json:"Horaire"`
+	VR      string `json:"VR"`
+	mapped  map[string]interface{}
 }
 
 // ToString return string conversion of marshal user
@@ -52,6 +55,27 @@ func (g *Game) UnmarshalFromRequest(r *http.Request) error {
 }
 
 // Marshal implement ISerial
-func (g *Game) Marshal() ([]byte, error) {
+func (g Game) Marshal() ([]byte, error) {
 	return json.Marshal(g)
+}
+
+func (g Game) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(g).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	g.mapped = mapped
+	return mapped
+}
+
+func (g Game) GetMapped() map[string]interface{} {
+	if len(g.mapped) == 0 {
+		g.toMap()
+	}
+	return g.mapped
 }

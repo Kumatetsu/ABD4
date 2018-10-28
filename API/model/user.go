@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 12:19:35 am
+ * Last Modified: Sunday, 28th October 2018 11:49:17 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ type User struct {
 	Claim      string        `json:"claim,omitempty"`
 	createdAt  time.Time
 	updatedAt  time.Time
+	mapped     map[string]interface{}
 }
 
 var USER = "user"
@@ -96,4 +98,31 @@ func (u *User) OrderById(results []*User, i, j int) bool {
 
 func (u *User) OrderByEmail(results []*User, i, j int) bool {
 	return strings.Compare(results[i].Email, results[j].Email) == 1
+}
+
+func (u *User) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(u).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	u.mapped = mapped
+	return mapped
+}
+
+func (u User) GetMapped() map[string]interface{} {
+	if len(u.mapped) == 0 {
+		u.toMap()
+	}
+	return u.mapped
+}
+
+func (u *User) ToES() *User {
+	uToES := u
+	uToES.ID = ""
+	return uToES
 }

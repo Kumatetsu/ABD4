@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 12:19:20 am
+ * Last Modified: Sunday, 28th October 2018 11:48:31 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 	"time"
 
 	"gopkg.in/mgo.v2/bson"
@@ -33,9 +35,14 @@ type Transaction struct {
 	Reservation []Reservation `json:"Reservation"`
 	createdAt   time.Time
 	updatedAt   time.Time
+	mapped      map[string]interface{}
 }
 
 var TRANSACTION = "transaction"
+
+func (t Transaction) GetID() string {
+	return t.ID
+}
 
 // ToString return string conversion of marshal user
 // absorb error...
@@ -78,4 +85,31 @@ func (t *Transaction) UnmarshalFromRequest(r *http.Request) error {
 // Marshal implement ISerial
 func (t Transaction) Marshal() ([]byte, error) {
 	return json.Marshal(t)
+}
+
+func (t *Transaction) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(t).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	t.mapped = mapped
+	return mapped
+}
+
+func (t Transaction) GetMapped() map[string]interface{} {
+	if len(t.mapped) == 0 {
+		t.toMap()
+	}
+	return t.mapped
+}
+
+func (t *Transaction) ToES() *Transaction {
+	tToES := t
+	tToES.ID = ""
+	return tToES
 }

@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:19:21 pm
+ * Last Modified: Tuesday, 23rd October 2018 5:51:01 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,14 +19,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 )
 
 // Spectateur is composed:
 type Spectateur struct {
-	Civilite    string    	`json:"Civilite"`
-	Nom       	string    	`json:"Nom"`
-	Prenom      string    	`json:"Prenom"`
-	Age   		int			`json:"Age, float64"`
+	Civilite string `json:"Civilite"`
+	Nom      string `json:"Nom"`
+	Prenom   string `json:"Prenom"`
+	Age      int    `json:"Age, float64"`
+	mapped   map[string]interface{}
 }
 
 // ToString return string conversion of marshal user
@@ -52,6 +55,27 @@ func (s *Spectateur) UnmarshalFromRequest(r *http.Request) error {
 }
 
 // Marshal implement ISerial
-func (s *Spectateur) Marshal() ([]byte, error) {
+func (s Spectateur) Marshal() ([]byte, error) {
 	return json.Marshal(s)
+}
+
+func (s Spectateur) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(s).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	s.mapped = mapped
+	return mapped
+}
+
+func (s Spectateur) GetMapped() map[string]interface{} {
+	if len(s.mapped) == 0 {
+		s.toMap()
+	}
+	return s.mapped
 }
