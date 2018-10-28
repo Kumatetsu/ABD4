@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 5:49:06 pm
+ * Last Modified: Sunday, 28th October 2018 1:35:38 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -22,9 +22,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Routing allow to retrieve the API routing
+// Routing function is the entry point to build the API routing
 func Routing(ctx *context.AppContext) *mux.Router {
+	// the base router is a mux entity
 	router := &mux.Router{}
+	// We set the Response object memory space
 	ctx.Rw = &Response{}
 	appendRootRoad(ctx, router)
 	appendRoadKit(ctx, router)

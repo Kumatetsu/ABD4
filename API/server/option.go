@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 4:05:30 pm
+ * Last Modified: Sunday, 28th October 2018 2:06:29 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -14,21 +14,22 @@
 package server
 
 type Option struct {
-	exe       string
 	env       string
-	embedES   bool
-	es        string
-	debug     bool
+	exe       string
+	ip        string
+	port      string
+	address   string
 	logpath   string
 	dbType    string
-	datapath  string
-	address   string
-	port      string
-	ip        string
 	mongoIP   string
 	mongoPort string
+	datapath  string
+	es        string
+	embedES   bool
 	index     bool
 	reindex   bool
+	rmindex   bool
+	debug     bool
 }
 
 var (
@@ -37,19 +38,20 @@ var (
 	TEST = "test"
 )
 
-func (o *Option) Hydrate(port, ip, env, es, dir, logpath, dbType, datapath, mongoIP, mongoPort string, embedES, index, reindex, debug bool) {
+func (o *Option) Hydrate(env, dir, ip, port, logpath, dbType, mongoIP, mongoPort, datapath, es string, embedES, index, reindex, rmindex, debug bool) {
+	o.exe = dir
+	o.env = env
+	o.embedES = embedES
 	o.port = port
 	o.ip = ip
 	o.datapath = datapath
 	o.dbType = dbType
 	o.logpath = logpath
-	o.env = env
-	o.embedES = embedES
 	o.es = es
 	o.debug = debug
-	o.exe = dir
 	o.index = index
 	o.reindex = reindex
+	o.rmindex = rmindex
 	o.mongoIP = mongoIP
 	o.mongoPort = mongoPort
 }
@@ -57,7 +59,10 @@ func (o *Option) Hydrate(port, ip, env, es, dir, logpath, dbType, datapath, mong
 // GetAddress concat ip and port and affect to address if needed
 // else default address is define to 127.0.0.1:80
 func (o *Option) GetAddress() string {
-	return o.ip + ":" + o.port
+	if o.address == "" {
+		o.address = o.ip + ":" + o.port
+	}
+	return o.address
 }
 
 /*
@@ -97,6 +102,7 @@ func (o *Option) GetLogpath() string {
 	return o.logpath
 }
 
+// GetDatabaseType return the kind of database the user want
 func (o *Option) GetDatabaseType() string {
 	return o.dbType
 }
@@ -133,6 +139,11 @@ func (o *Option) GetIndex() bool {
 // GetReindex return if reindexation is needed default false
 func (o *Option) GetReindex() bool {
 	return o.reindex
+}
+
+// GetRmindex return if index removal is needed default false
+func (o *Option) GetRmindex() bool {
+	return o.rmindex
 }
 
 func (o *Option) GetMongoIP() string {
