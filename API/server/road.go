@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 1:37:46 pm
+ * Last Modified: Sunday, 28th October 2018 7:14:54 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -129,11 +129,46 @@ func getBackupRouting() []*Road {
 func getElasticRouting() []*Road {
 	return []*Road{
 		{
-			Name:            GET + " /elastic",
+			Name:            GET + " /elastic/index/all",
 			Method:          GET,
-			Pattern:         "",
+			Pattern:         "/index/all",
 			StatusProtected: false,
-			HandlerFunc:     handler.GetElasticHealth,
+			HandlerFunc:     handler.GetCreateIndexation,
+		},
+		{
+			Name:            GET + " /elastic/index/{index}",
+			Method:          GET,
+			Pattern:         "/index/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetCreateIndex,
+		},
+		{
+			Name:            GET + " /elastic/rmindex/all",
+			Method:          GET,
+			Pattern:         "/rmindex/all",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetRemoveIndexation,
+		},
+		{
+			Name:            GET + " /elastic/rmindex/{index}",
+			Method:          GET,
+			Pattern:         "/rmindex/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetRemoveIndex,
+		},
+		{
+			Name:            GET + " /elastic/reindex/all",
+			Method:          GET,
+			Pattern:         "/reindex/all",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetReindexation,
+		},
+		{
+			Name:            GET + " /elastic/reindex/{index}",
+			Method:          GET,
+			Pattern:         "/reindex/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetReindex,
 		},
 	}
 }
