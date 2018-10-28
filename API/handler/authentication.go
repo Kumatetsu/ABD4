@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 14th October 2018 4:36:26 pm
+ * Last Modified: Sunday, 28th October 2018 2:32:08 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -17,6 +17,7 @@ import (
 	"ABD4/API/context"
 	"ABD4/API/model"
 	"ABD4/API/utils"
+	gocontext "context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -64,8 +65,7 @@ func Login(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 		}
 		ctx.SessionUser = user
 		ctx.Log.Info.Printf("%s login process ok, token: %s", utils.Use().GetStack(Login), token)
-		response := ctx.Rw.NewResponse(200, token, "", "")
-		response.SendItSelf(ctx, w)
+		ctx.Rw.SendString(ctx, w, http.StatusOK, token, "Authentication success", "")
 		return
 	}
 	msg := fmt.Sprintf("%s invalid credentials", utils.Use().GetStack(Login))
@@ -87,6 +87,22 @@ func Register(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "error saving user", fmt.Sprintf("%s %s", utils.Use().GetStack(Register), err.Error()))
 		return
 	}
-	ctx.Rw.Send(ctx, w, 200, user, "", "")
+
+	// si on utilise elastic search on index
+	// attention, une donnée non indexée à la création pourra
+	// l'être si la reindexation est demandée
+	if ctx.Opts.GetEmbedES() {
+		indexUserCreation, err := ctx.ElasticClient.Index().
+			Index(context.USERS).
+			Type(context.USER).
+			BodyJson(user.ToES()).
+			Refresh("true").
+			Do(gocontext.Background())
+		if err != nil {
+			ctx.Log.Error.Printf("%s %s", utils.Use().GetStack(Register), err.Error())
+		}
+		ctx.Log.Info.Printf("%s %v", utils.Use().GetStack(Register), indexUserCreation)
+	}
+	ctx.Rw.SendSerializable(ctx, w, 200, user, "", "")
 	return
 }

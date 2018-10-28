@@ -23,19 +23,20 @@ func Instanciate(serv string) (*elastic.Client, error) {
 	return client, nil
 }
 
-//IndexAll launch indexation or re-indexation
-func IndexAll(es *elastic.Client, reindex bool) error {
+// CreateIndexation create or recreate elastic search index
+// no data are pushed in this method
+// indexes name are based on filenames in esmapping folder
+func CreateIndexation(es *elastic.Client, reindex bool) error {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	mappingDir := filepath.Join(dir, "API/elasticsearch/esmapping/")
-	fmt.Printf("%s mapping dir: %s", utils.Use().GetStack(IndexAll), mappingDir)
+	fmt.Printf("%s mapping dir: %s", utils.Use().GetStack(CreateIndexation), mappingDir)
 	files, err := ioutil.ReadDir(mappingDir)
 	if err != nil {
 		return fmt.Errorf("%s %s", utils.Use().GetStack(Instanciate), err.Error())
 	}
-
 	if reindex {
 		for _, file := range files {
 			err = ReIndex(es, utils.NoFileExtension(file.Name()))
@@ -49,28 +50,65 @@ func IndexAll(es *elastic.Client, reindex bool) error {
 }
 
 // Index all the entities mapped in elasticsearch/esmapping/
-// TODO ajouter une boucle for sur les fichiers pour indexer.
+// Only create index as far as elasticsearch package dont know model and database
+// Data are indexed in context, because context is the only one to know everybody
 func Index(es *elastic.Client, index string) error {
 	exists, err := es.IndexExists(index).Do(context.Background())
 	if err != nil {
 		return err
 	}
-
 	if !exists {
 		err = createIndex(es, index)
 		if err != nil {
 			return err
 		}
 	}
-
-	//TODO penser à indexer depui la db pour chaque entité.
-
 	return nil
 }
 
 // ReIndex delete and create index
-// TODO: Quand on aura toutes les db il faudra faire en sorte qu'elle get tous les mappings :)
+// Only recreate index as far as elasticsearch package dont know model and database
+// Data are indexed in context, because context is the only one to know everybody
 func ReIndex(es *elastic.Client, index string) error {
+	err := RemoveIndex(es, index)
+	if err != nil {
+		return err
+	}
+	err = Index(es, index)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//creatIndex create ES index
+func createIndex(es *elastic.Client, index string) error {
+
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	mappingDir := filepath.Join(dir, "API/elasticsearch/esmapping/")
+	fmt.Printf("%s mapping dir: %s", utils.Use().GetStack(createIndex), mappingDir)
+	mapping, err := ioutil.ReadFile(filepath.Join(mappingDir, index+".json"))
+	if err != nil {
+		return err
+	}
+	//Casts to string for BodyString method
+	mappingstr := string(mapping)
+	createIndex, err := es.CreateIndex(index).BodyString(mappingstr).Do(context.Background())
+	if err != nil {
+		return err
+	}
+	if !createIndex.Acknowledged {
+		return fmt.Errorf("%s %s", utils.Use().GetStack(RemoveIndex), fmt.Sprintf("create %s index unacknowledge", index))
+	}
+
+	return nil
+}
+
+// RemoveIndex delete the whole 'index' from elastic search
+func RemoveIndex(es *elastic.Client, index string) error {
 	exists, err := es.IndexExists(index).Do(context.Background())
 	if err != nil {
 		return err
@@ -83,41 +121,8 @@ func ReIndex(es *elastic.Client, index string) error {
 			return err
 		}
 		if !deleteIndex.Acknowledged {
-			return err
+			return fmt.Errorf("%s %s", utils.Use().GetStack(RemoveIndex), fmt.Sprintf("delete %s index unacknowledge", index))
 		}
 	}
-
-	err = Index(es, index)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-//creatIndex create ES index
-func createIndex(es *elastic.Client, index string) error {
-
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
-	mappingDir := filepath.Join(dir, "API/elasticsearch/esmapping/")
-	fmt.Printf("%s mapping dir: %s", utils.Use().GetStack(IndexAll), mappingDir)
-	mapping, err := ioutil.ReadFile(filepath.Join(mappingDir, index+".json"))
-	if err != nil {
-		return err
-	}
-
-	//Casts to string for BodyString method
-	mappingstr := string(mapping)
-	createIndex, err := es.CreateIndex(index).BodyString(mappingstr).Do(context.Background())
-	if err != nil {
-		return err
-	}
-	if !createIndex.Acknowledged {
-		return err
-	}
-
 	return nil
 }
