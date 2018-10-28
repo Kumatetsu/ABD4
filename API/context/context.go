@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 12:52:58 am
+ * Last Modified: Sunday, 28th October 2018 1:22:06 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -14,9 +14,15 @@
 package context
 
 import (
+	boltM "ABD4/API/database/boltdatabase/manager"
+	"ABD4/API/database/mongo"
+	mongoM "ABD4/API/database/mongo/manager"
 	"ABD4/API/elasticsearch"
+	"ABD4/API/iserial"
 	"ABD4/API/logger"
 	"ABD4/API/utils"
+	goctx "context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -24,9 +30,145 @@ import (
 )
 
 var (
-	appName = "abd4"
+	PROJECT = "abd4"
+	MONGO   = "mongo"
+	BOLT    = "bolt"
+	USER    = "user"
+	USERS   = "users"
+	TX      = "transaction"
+	TXs     = "transactions"
 	SECRET  = "==+VDMEG@ABD4"
+	INDEXES = []string{USERS, TXs}
 )
+
+// logState log final parameters at the launch of API
+func (ctx *AppContext) logState() {
+	ctx.Log.Info.Printf("%s RootDir: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Exe)
+	ctx.Log.Info.Printf("%s LogPath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Logpath)
+	ctx.Log.Info.Printf("%s Database asked: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatabaseType())
+	if ctx.Opts.GetDatabaseType() == "mongo" {
+		ctx.Log.Info.Printf("%s Mongo server address: %s:%s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetMongoIP(), ctx.Opts.GetMongoPort())
+	} else {
+		ctx.Log.Info.Printf("%s Bolt datapath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatapath())
+	}
+	ctx.Log.Info.Printf("%s IP: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetIP())
+	ctx.Log.Info.Printf("%s Port: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetPort())
+	ctx.Log.Info.Printf("%s Address: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetAddress())
+}
+
+// setDao define database access relying on GetDatabaseType return
+// accept mongo or bolt database
+func (ctx *AppContext) setDAO(kind string) error {
+	switch kind {
+	case MONGO:
+		mongoAddr := ctx.Opts.GetMongoIP() + ":" + ctx.Opts.GetMongoPort()
+		mongo, err := mongo.GetMongo(mongoAddr)
+		if err != nil {
+			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+		}
+		ctx.UserManager = &mongoM.UserManager{}
+		err = ctx.UserManager.Init(map[string]string{
+			"dbName": PROJECT,
+			"entity": USER,
+		})
+		err = ctx.UserManager.SetDB(mongo)
+		if err != nil {
+			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+		}
+		ctx.TransactionManager = &mongoM.TransactionManager{}
+		err = ctx.TransactionManager.Init(map[string]string{
+			"dbName": PROJECT,
+			"entity": TXs,
+		})
+		err = ctx.TransactionManager.SetDB(mongo)
+		if err != nil {
+			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+		}
+	case BOLT:
+		userManager := &boltM.UserManager{}
+		userManager.Init(map[string]string{
+			"name":     PROJECT,
+			"fullpath": ctx.DataPath,
+			"secret":   SECRET,
+		})
+		ctx.UserManager = userManager
+	}
+	return nil
+}
+
+// indexData take data actually in database and send it to elastic correspondant index
+// there is nothing to prevent the reindexation of data
+// its easy to fix a bad indexation using rmindex/index/reindex options
+func (ctx *AppContext) indexData() error {
+	if ctx.UserManager.GetDBName() == "" || ctx.TransactionManager.GetDBName() == "" {
+		return fmt.Errorf("%s At list one data manager is missing", utils.Use().GetStack(ctx.indexData))
+	}
+	users, err := ctx.UserManager.FindAll()
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+	var serialUsers []iserial.Serializable
+	for _, u := range users {
+		serialUsers = append(serialUsers, u.ToES())
+	}
+	err = ctx.IndexArrayData(serialUsers, USERS, USER)
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+	tx, err := ctx.TransactionManager.FindAll()
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+	var serialTx []iserial.Serializable
+	for _, transaction := range tx {
+		serialTx = append(serialTx, transaction.ToES())
+	}
+	err = ctx.IndexArrayData(serialTx, TXs, TX)
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+	return nil
+}
+
+// embedElasticSearch is the entry point to settle an elasticsearch context linked with this api
+// User and Transaction entities are indexed
+// This can be deactivated using flag embedES=false
+func (ctx *AppContext) embedElasticSearch() {
+	var err error
+
+	ctx.ElasticClient, err = elasticsearch.Instanciate(ctx.Opts.GetEs())
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+	// if flag rmindex is passed to .exe, indexes 'users' and 'transactions' are removed
+	if ctx.Opts.GetRmindex() {
+		err = elasticsearch.RemoveIndex(ctx.ElasticClient, USERS)
+		if err != nil {
+			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		}
+		err = elasticsearch.RemoveIndex(ctx.ElasticClient, TXs)
+		if err != nil {
+			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		}
+	}
+	// if index or reindex flag is present
+	// index create indexes if don't exist
+	// reindex remove and create indexes
+	// if reindex, data are pulled from database and send to elasticsearch
+	// there is nothing to prevent duplicate in elastic
+	if ctx.Opts.GetIndex() || ctx.Opts.GetReindex() {
+		err = elasticsearch.CreateIndexation(ctx.ElasticClient, ctx.Opts.GetReindex())
+		if err != nil {
+			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		}
+		if ctx.Opts.GetReindex() {
+			err = ctx.indexData()
+			if err != nil {
+				ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+			}
+		}
+	}
+}
 
 // Instanciate the global ctx variable
 // AppContext know: manager, iserial, utils and logger packages
@@ -47,7 +189,7 @@ var (
 // - IServerOption: On the structure embedding configuration from flags and harcoded values
 func (ctx *AppContext) Instanciate(opts IServerOption) *AppContext {
 	if opts.GetExeFolder() == "" {
-		log.Fatalf("No exe folder defined, %s unable to provide defaults values", appName)
+		log.Fatalf("No exe folder defined, %s unable to provide defaults values", PROJECT)
 	}
 	// check opts content and define default values if required
 	if opts.GetLogpath() == "" {
@@ -69,7 +211,7 @@ func (ctx *AppContext) Instanciate(opts IServerOption) *AppContext {
 	// but we can move it easy to three log files (debug, info, error)
 	// for now, debug mode is useless
 	logFile, err := os.OpenFile(
-		filepath.Join(opts.GetLogpath(), appName+".log"),
+		filepath.Join(opts.GetLogpath(), PROJECT+".log"),
 		os.O_RDWR|os.O_CREATE|os.O_APPEND,
 		0666)
 	if err != nil {
@@ -86,39 +228,51 @@ func (ctx *AppContext) Instanciate(opts IServerOption) *AppContext {
 	ctx.Logpath = opts.GetLogpath()
 	ctx.DataPath = opts.GetDatapath()
 
+	// define dao access (database/manager package)
+	err = ctx.setDAO(opts.GetDatabaseType())
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+
 	//Define elastic serv and index if needed
-	embedElastic := opts.GetEmbedES()
-	if embedElastic {
-		esServ := opts.GetEs()
-		ctx.ElasticClient, err = elasticsearch.Instanciate(esServ)
-		if err != nil {
-			loggers.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-		}
-
-		// When Es client is up, check if we need to reindex
-		if opts.GetIndex() && false == opts.GetReindex() {
-			err = elasticsearch.IndexAll(ctx.ElasticClient, false)
-			if err != nil {
-				loggers.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-			}
-		} else if opts.GetReindex() {
-			err = elasticsearch.IndexAll(ctx.ElasticClient, true)
-			if err != nil {
-				loggers.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-			}
-		}
+	if opts.GetEmbedES() {
+		ctx.embedElasticSearch()
 	}
-	ctx.Log.Info.Printf("%s RootDir: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Exe)
-	ctx.Log.Info.Printf("%s LogPath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Logpath)
-	ctx.Log.Info.Printf("%s Database asked: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatabaseType())
-	if ctx.Opts.GetDatabaseType() == "mongo" {
-		ctx.Log.Info.Printf("%s Mongo server address: %s:%s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetMongoIP(), ctx.Opts.GetMongoPort())
-	} else {
-		ctx.Log.Info.Printf("%s Bolt datapath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatapath())
-	}
-	ctx.Log.Info.Printf("%s IP: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetIP())
-	ctx.Log.Info.Printf("%s Port: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetPort())
-	ctx.Log.Info.Printf("%s Address: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetAddress())
-
+	ctx.logState()
 	return ctx
+}
+
+// IndexData send a iserial.Serializable entity to elasticsearch
+// index and t are elasticsearch target index and entity type:
+// 'transactions' and 'transaction' for exemple
+func (ctx *AppContext) IndexData(i iserial.Serializable, index, t string) error {
+	op, err := ctx.ElasticClient.Index().
+		Index(index).
+		Type(t).
+		BodyJson(i).
+		Refresh("true").
+		Do(goctx.Background())
+	if err != nil {
+		ctx.Log.Error.Printf("%s %s", utils.Use().GetStack(ctx.IndexData), err.Error())
+		return err
+	}
+	ctx.Log.Info.Printf("%s insert unit %s to index %s, entity type: %s", utils.Use().GetStack(ctx.IndexData), op.Id, op.Index, op.Type)
+	return nil
+}
+
+// IndexArrayData, call IndexData on an array of iserial.Serializable
+func (ctx *AppContext) IndexArrayData(serializables []iserial.Serializable, index, t string) error {
+	var err error
+	for _, i := range serializables {
+		err = ctx.IndexData(i, index, t)
+		if err != nil {
+			break
+		}
+	}
+	return err
+}
+
+// RemoveIndex destroy completely an index
+func (ctx *AppContext) RemoveIndex(index string) error {
+	return elasticsearch.RemoveIndex(ctx.ElasticClient, index)
 }

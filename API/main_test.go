@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 12:32:20 am
+ * Last Modified: Sunday, 28th October 2018 2:10:35 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -47,7 +47,23 @@ func TestMain(m *testing.M) {
 	dir := os.Getenv("GOPATH") + "/src/ABD4/API/test"
 	opts := &server.Option{}
 	port := strconv.Itoa(8001)
-	opts.Hydrate(port, "127.0.0.1", "test", dir, dir+"/log", "mongo", dir+"/data", "127.0.0.1", "27017", false, false, false, true)
+	env, dir, ip, port, logpath, dbType, mongoIP, mongoPort, datapath, es string, embedES, index, reindex, rmindex, debug bool
+	opts.Hydrate(
+		"test", // env
+		dir, // dir
+		"127.0.0.1", // ip
+		port, // port
+		dir+"/log", // logpath
+		"mongo", // databasetype
+		"127.0.0.1", // mongoip
+		"27017", // mongo port
+		dir+"/data", // datapath (for bolt)
+		false, // embedES
+		false, // index
+		false, // reindex
+		false, // rmindex
+		true // debug
+	)
 	signal := make(chan bool)
 	os.Remove(opts.GetDatapath() + "/users.dat")
 	go launchTestApp(opts, signal)
