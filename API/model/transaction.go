@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 11:48:31 am
+ * Last Modified: Sunday, 28th October 2018 4:36:18 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -47,7 +47,7 @@ func (t Transaction) GetID() string {
 // ToString return string conversion of marshal user
 // absorb error...
 func (t *Transaction) ToString() string {
-	ret, _ := t.Marshal()
+	ret, _ := t.MarshalJSON()
 	return string(ret)
 }
 
@@ -83,8 +83,9 @@ func (t *Transaction) UnmarshalFromRequest(r *http.Request) error {
 }
 
 // Marshal implement ISerial
-func (t Transaction) Marshal() ([]byte, error) {
-	return json.Marshal(t)
+func (t Transaction) MarshalJSON() ([]byte, error) {
+	// we parse t in map[string]interface{}
+	return json.Marshal(t.toMap())
 }
 
 func (t *Transaction) toMap() map[string]interface{} {

@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 1st October 2018 1:10:40 am
+ * Last Modified: Sunday, 28th October 2018 4:40:15 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -35,7 +35,7 @@ func Authenticate(ctx *context.AppContext, handler *context.HandlerWrapper, prot
 		Ctx: ctx,
 		H: func(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 			user := &model.User{}
-			var claim model.Claim
+			claim := &model.Claim{}
 			// check if road is protected
 			if !protected {
 				handler.ServeHTTP(w, r)
@@ -49,13 +49,13 @@ func Authenticate(ctx *context.AppContext, handler *context.HandlerWrapper, prot
 				return
 			}
 			// parse token with claims
-			token, err := jwt.ParseWithClaims(tokenStr, &claim, parseWithClaims)
+			token, err := jwt.ParseWithClaims(tokenStr, claim, parseWithClaims)
 			if err != nil {
 				ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "bad authorization format", fmt.Sprintf("%s %s", utils.Use().GetStack(Authenticate), err.Error()))
 				return
 			}
 			// check token's validity and expiration
-			claim, ok := token.Claims.(model.Claim)
+			claim, ok := token.Claims.(*model.Claim)
 			if !ok {
 				ctx.Rw.SendError(ctx, w, http.StatusUnauthorized, "readed token is not valid", fmt.Sprintf("%s", utils.Use().GetStack(Authenticate)))
 				return
@@ -88,7 +88,7 @@ func parseBasicAuthorization(r *http.Request) (string, error) {
 	if len(auth) != 2 || auth[0] != "Basic" {
 		return "", fmt.Errorf("\nAuthentication: No valid Basic authorization token provided")
 	}
-	return strings.Trim(auth[1], "\""), nil
+	return auth[1], nil
 }
 
 func parseWithClaims(t *jwt.Token) (interface{}, error) {
