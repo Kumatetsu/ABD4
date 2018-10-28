@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 12:58:45 am
+ * Last Modified: Sunday, 28th October 2018 2:00:43 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -17,6 +17,7 @@ import (
 	"ABD4/API/model"
 )
 
+// IDataManager is the common part for all Data Manager
 type IDataManager interface {
 	Init(map[string]string) error
 	GetDB() interface{}
@@ -27,6 +28,8 @@ type IDataManager interface {
 	SetDBName(dbName string)
 }
 
+// IUserManager define what is needed to access
+// user data whatever database is used
 type IUserManager interface {
 	IDataManager
 	FindAll() ([]*model.User, error)
@@ -39,6 +42,8 @@ type IUserManager interface {
 	FakePersist(n int) error
 }
 
+// ITransactionManager define what is needed to access
+// transaction data whatever database is used
 type ITransactionManager interface {
 	IDataManager
 	FindAll() ([]*model.Transaction, error)

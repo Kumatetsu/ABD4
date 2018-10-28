@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 16th October 2018 1:02:51 am
+ * Last Modified: Saturday, 27th October 2018 1:21:19 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -108,7 +108,7 @@ func (um UserManager) GetDBName() string {
 func (um UserManager) FindAll() ([]*model.User, error) {
 	c := um.session.DB(um.dbName).C(um.entity)
 	results := []*model.User{}
-	err := c.Find(bson.M{}).All(results)
+	err := c.Find(bson.M{}).All(&results)
 	if err != nil {
 		return nil, fmt.Errorf("%s find: %s", utils.Use().GetStack(um.FindAll), err.Error())
 	}
@@ -148,12 +148,12 @@ func (um UserManager) Create(user *model.User) (*model.User, error) {
 	user.SetCreatedAt(time.Now())
 	user.SetUpdatedAt(time.Now())
 	user.ObjectID = bson.NewObjectId()
+	user.ID = bson.ObjectId.Hex(user.ObjectID)
 	c := um.session.DB(um.dbName).C(um.entity)
 	err := c.Insert(user)
 	if err != nil {
 		return nil, fmt.Errorf("%s Insert: %s", utils.Use().GetStack(um.Create), err.Error())
 	}
-	user.ID = bson.ObjectId.Hex(user.ObjectID)
 	return user, nil
 }
 

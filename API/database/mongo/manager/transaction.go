@@ -110,7 +110,6 @@ func (tm TransactionManager) FindAll() ([]*model.Transaction, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s find: %s", utils.Use().GetStack(tm.FindAll), err.Error())
 	}
-	tm.parseObjectIds(results)
 	return results, nil
 }
 
@@ -121,7 +120,6 @@ func (tm TransactionManager) FindOneBy(param map[string]string) (*model.Transact
 	if err != nil {
 		return nil, fmt.Errorf("%s find: %s", utils.Use().GetStack(tm.FindBy), err.Error())
 	}
-	result.ID = bson.ObjectId.Hex(result.ObjectID)
 	return result, nil
 }
 
@@ -132,18 +130,17 @@ func (tm TransactionManager) FindBy(param map[string]string) ([]*model.Transacti
 	if err != nil {
 		return nil, fmt.Errorf("%s find: %s", utils.Use().GetStack(tm.FindBy), err.Error())
 	}
-	tm.parseObjectIds(results)
 	return results, nil
 }
 
 func (tm TransactionManager) Create(transaction *model.Transaction) (*model.Transaction, error) {
 	transaction.ObjectID = bson.NewObjectId()
+	transaction.ID = bson.ObjectId.Hex(transaction.ObjectID)
 	c := tm.session.DB(tm.dbName).C(tm.entity)
 	err := c.Insert(transaction)
 	if err != nil {
 		return nil, fmt.Errorf("%s Insert: %s", utils.Use().GetStack(tm.Create), err.Error())
 	}
-	transaction.ID = bson.ObjectId.Hex(transaction.ObjectID)
 	return transaction, nil
 }
 
