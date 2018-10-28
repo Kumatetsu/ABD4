@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 2:42:08 pm
+ * Last Modified: Sunday, 28th October 2018 6:32:26 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -28,7 +28,8 @@ func GetTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 	ctx.Log.Info.Printf("%s %s ", utils.Use().GetStack(GetTransaction), "Getting Transactions")
 	tx, err := ctx.TransactionManager.FindAll()
 	if err != nil {
-		ctx.Log.Error.Printf("%s %s", utils.Use().GetStack(GetTransaction), err.Error())
+		msg := fmt.Sprintf("%s FindAll failed", utils.Use().GetStack(GetTransaction))
+		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
 	for _, t := range tx {

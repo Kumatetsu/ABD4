@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 23rd October 2018 5:45:57 pm
+ * Last Modified: Sunday, 28th October 2018 6:22:11 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -25,17 +25,12 @@ import (
 
 // Acheteur is composed:
 type Acheteur struct {
-<<<<<<< 5bdf2231d118196baa3442a5639ee97ff02c5476
-	Civilite    string    	`json:"Civilite"`
-	Nom       	string    	`json:"Nom"`
-	Prenom      string    	`json:"Prenom"`
-	Age   		int			`json:"Age, float64"`
-	Email 		string    	`json:"Email"`
-=======
-	Spectateur
-	Email  string `json:"Email"`
-	mapped map[string]interface{}
->>>>>>> feat(iserial): we dont pass by json marshall annotation, we convert struct to map, this allow us to have a universal way to pass data to IResponseWriter instance
+	Civilite string `json:"Civilite"`
+	Nom      string `json:"Nom"`
+	Prenom   string `json:"Prenom"`
+	Age      int    `json:"Age, float64"`
+	Email    string `json:"Email"`
+	mapped   map[string]interface{}
 }
 
 // ToString return string conversion of marshal user
