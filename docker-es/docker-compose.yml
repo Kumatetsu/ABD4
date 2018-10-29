@@ -1,0 +1,60 @@
+version: '2'
+services:
+  elasticsearch1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.3  #image used for the docker
+    container_name: ESABD1                                          #name of the container
+    #environment variables
+    environment:
+      - cluster.name=docker-cluster  #elasticsearch cluster  name
+      - bootstrap.memory_lock=true
+      - http.publish_host=127.0.0.1
+      - xpack.security.enabled=false    #disable identification to access ES
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:     #limit use of system-wide resources
+        nproc: 65536
+        nofile:
+            soft: 65536
+            hard: 65536
+        memlock:
+            soft: -1
+            hard: -1
+    mem_limit: 1g
+    volumes:
+      - ./data:/usr/share/elasticsearch/data #share ./data à /user/share/elasticsearch/data in the docker
+    ports:
+      - 9200:9200
+    networks:
+      - esnet
+    ###
+    ### Si on veut faire un deuxième node.. je ne pense pas que ce soit utilse pour le moment.
+    ###
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.3
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - http.publish_host=127.0.0.1
+      - "discovery.zen.ping.unicast.hosts=ESABD1"
+    ulimits:
+        nproc: 65536
+        nofile:
+            soft: 65536
+            hard: 65536
+        memlock:
+            soft: -1
+            hard: -1
+    mem_limit: 1g
+    volumes:
+      - ./data2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+
+networks:
+  esnet:
+
+
+#   thanks to:
+#       https://github.com/olivere/elastic-with-docker
+#       https://docs.docker.com/compose/compose-file/compose-file-v2

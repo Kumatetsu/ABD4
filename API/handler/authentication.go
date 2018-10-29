@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 5:50:33 pm
+ * Last Modified: Sunday, 28th October 2018 6:34:08 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -17,6 +17,7 @@ import (
 	"ABD4/API/context"
 	"ABD4/API/model"
 	"ABD4/API/utils"
+	gocontext "context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,26 +27,23 @@ import (
 // Must receive: {"email": string, "password": string}
 func Login(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	user := &model.User{}
-	isTrusted := false
 	err := user.UnmarshalFromRequest(r)
 	if nil != err {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "can't interpret users data", fmt.Sprintf("%s %s", utils.Use().GetStack(Login), err.Error()))
 		return
 	}
-	// Replace this local fake implementation by a database implementation
-	users, err := ctx.UserManager.Seek()
+	// if no user is found, user is erased
+	user, err = ctx.UserManager.FindOneBy(map[string]string{
+		"email":    user.Email,
+		"password": user.Password,
+	})
 	if err != nil {
-		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "retrieving users failed", fmt.Sprintf("%s failed to seek users %s", utils.Use().GetStack(Login), err.Error()))
+		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "retrieving user failed", fmt.Sprintf("%s %s", utils.Use().GetStack(Login), err.Error()))
 		return
 	}
-	for _, u := range users {
-		if u.Email == user.Email && u.Password == user.Password {
-			isTrusted = true
-			user = u
-			ctx.Log.Info.Printf("%s user identified: %v", utils.Use().GetStack(Login), u)
-		}
-	}
-	if user.ID != "" && isTrusted {
+	ctx.Log.Info.Printf("%s %s want to login! %v", utils.Use().GetStack(Login), user.Email, user)
+	if user.ID != "" {
+		ctx.Log.Info.Printf("%s %s is in login process!", utils.Use().GetStack(Login), user.Email)
 		claim := &model.Claim{}
 		if user.Claim != "" {
 			// L'utilisateur est connu des services et a des claims
@@ -67,11 +65,10 @@ func Login(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 		}
 		ctx.SessionUser = user
 		ctx.Log.Info.Printf("%s login process ok, token: %s", utils.Use().GetStack(Login), token)
-		response := ctx.Rw.NewResponse(200, token, "", "")
-		response.SendItSelf(ctx, w)
+		ctx.Rw.SendString(ctx, w, http.StatusOK, token, "Authentication success", "")
 		return
 	}
-	msg := fmt.Sprintf("%s invalid user in request", utils.Use().GetStack(Login))
+	msg := fmt.Sprintf("%s invalid credentials", utils.Use().GetStack(Login))
 	ctx.Rw.SendError(ctx, w, 401, msg, "")
 	return
 }
@@ -85,11 +82,27 @@ func Register(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "can't interpret user data", fmt.Sprintf("%s %s", utils.Use().GetStack(Register), err.Error()))
 		return
 	}
-	user, err = ctx.UserManager.NewUser(user.Name, user.Email, user.Password, user.Permission, user.Claim)
+	user, err = ctx.UserManager.Create(user)
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "error saving user", fmt.Sprintf("%s %s", utils.Use().GetStack(Register), err.Error()))
 		return
 	}
-	ctx.Rw.Send(ctx, w, 200, user, "", "")
+
+	// si on utilise elastic search on index
+	// attention, une donnée non indexée à la création pourra
+	// l'être si la reindexation est demandée
+	if ctx.Opts.GetEmbedES() {
+		indexUserCreation, err := ctx.ElasticClient.Index().
+			Index(context.USERS).
+			Type(context.USER).
+			BodyJson(user.ToES()).
+			Refresh("true").
+			Do(gocontext.Background())
+		if err != nil {
+			ctx.Log.Error.Printf("%s %s", utils.Use().GetStack(Register), err.Error())
+		}
+		ctx.Log.Info.Printf("%s %v", utils.Use().GetStack(Register), indexUserCreation)
+	}
+	ctx.Rw.SendSerializable(ctx, w, http.StatusCreated, user, "", "")
 	return
 }

@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:19:21 pm
+ * Last Modified: Sunday, 28th October 2018 4:35:54 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -19,29 +19,52 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 // User is composed:
 // Claim are used for jwt token signature
 // Permission
 type User struct {
-	ID         string    `json:"id,omitempty"`
-	Name       string    `json:"name"`
-	Email      string    `json:"email"`
-	Password   string    `json:"password"`
-	Permission string    `json:"permission,omitempty"`
-	Claim      string    `json:"claim,omitempty"`
-	CreatedAt  time.Time `json:"createdAt,omitempty"`
-	UpdatedAt  time.Time `json:"updatedAt,omitempty"`
+	ObjectID   bson.ObjectId `bson:"_id,omitempty"`
+	ID         string        `json:"id,omitempty"`
+	Name       string        `json:"name"`
+	Email      string        `json:"email"`
+	Password   string        `json:"password"`
+	Permission string        `json:"permission,omitempty"`
+	Claim      string        `json:"claim,omitempty"`
+	createdAt  time.Time
+	updatedAt  time.Time
+	mapped     map[string]interface{}
 }
+
+var USER = "user"
 
 // ToString return string conversion of marshal user
 // absorb error...
 func (u *User) ToString() string {
-	ret, _ := u.Marshal()
+	ret, _ := u.MarshalJSON()
 	return string(ret)
+}
+
+func (u *User) SetCreatedAt(now time.Time) {
+	u.createdAt = now
+}
+
+func (u *User) SetUpdatedAt(now time.Time) {
+	u.updatedAt = now
+}
+
+func (u User) GetCreatedAt() time.Time {
+	return u.createdAt
+}
+
+func (u User) GetUpdatedAt() time.Time {
+	return u.updatedAt
 }
 
 // UnmarshalFromRequest take a request object supposed to contain
@@ -65,8 +88,9 @@ func (u *User) GetID() string {
 }
 
 // Marshal implement ISerial
-func (u *User) Marshal() ([]byte, error) {
-	return json.Marshal(u)
+func (u User) MarshalJSON() ([]byte, error) {
+	// we parse u to map[string]interface{}
+	return json.Marshal(u.toMap())
 }
 
 func (u *User) OrderById(results []*User, i, j int) bool {
@@ -75,4 +99,31 @@ func (u *User) OrderById(results []*User, i, j int) bool {
 
 func (u *User) OrderByEmail(results []*User, i, j int) bool {
 	return strings.Compare(results[i].Email, results[j].Email) == 1
+}
+
+func (u *User) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(u).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	u.mapped = mapped
+	return mapped
+}
+
+func (u User) GetMapped() map[string]interface{} {
+	if len(u.mapped) == 0 {
+		u.toMap()
+	}
+	return u.mapped
+}
+
+func (u *User) ToES() *User {
+	uToES := u
+	uToES.ID = ""
+	return uToES
 }

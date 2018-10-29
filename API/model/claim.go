@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 4:14:40 pm
+ * Last Modified: Tuesday, 23rd October 2018 5:46:56 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -17,6 +17,8 @@ import (
 	"ABD4/API/utils"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -34,6 +36,7 @@ var (
 type Claim struct {
 	User string `json:"user,string"`
 	jwt.StandardClaims
+	mapped map[string]interface{}
 }
 
 func (c *Claim) toString() (string, error) {
@@ -73,6 +76,27 @@ func (c *Claim) GetToken() (string, error) {
 }
 
 // Marshal to implement ISerial interface
-func (c *Claim) Marshal() ([]byte, error) {
+func (c Claim) Marshal() ([]byte, error) {
 	return json.Marshal(c)
+}
+
+func (c Claim) toMap() map[string]interface{} {
+	mapped := make(map[string]interface{})
+	structure := reflect.ValueOf(c).Elem()
+	typeOfStructure := structure.Type()
+	for i := 0; i < structure.NumField(); i++ {
+		field := structure.Field(i)
+		if field.CanInterface() {
+			mapped[strings.ToLower(typeOfStructure.Field(i).Name)] = field.Interface()
+		}
+	}
+	c.mapped = mapped
+	return mapped
+}
+
+func (c Claim) GetMapped() map[string]interface{} {
+	if len(c.mapped) == 0 {
+		c.toMap()
+	}
+	return c.mapped
 }

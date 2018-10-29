@@ -60,18 +60,26 @@ while (true) {
         CURLOPT_CUSTOMREQUEST => "POST",
         CURLOPT_POSTFIELDS => $json_result,
         CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_POSTREDIR => 3,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
             'Content-Length: ' . strlen($json_result)
         ]
     ];
-    $ch = curl_init('http://127.0.0.1:8000');
-
+    $addr = 'http://127.0.0.1:8000/transaction';
+    $ch = curl_init($addr);
+    echo "\n\n";
+    echo $addr;
+    echo "\n\n";
     curl_setopt_array($ch,$options);
     echo(json_encode($result));
     echo "\n\n";
 
     $response = curl_exec($ch);
+    echo "Response: ".$response;
+    echo "\n\n";
+    curl_close($ch);
     echo json_encode($response);
     echo "\n\n";
 }

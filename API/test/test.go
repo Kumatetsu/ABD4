@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 8:51:49 pm
+ * Last Modified: Sunday, 28th October 2018 2:12:15 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -40,15 +40,15 @@ type Test struct {
 // GetTests return tests definitions
 func (ts *Suite) GetTests(mock *Mock) []*Test {
 	fmt.Printf("test on users: %v, and post user: %v", mock.Users, mock.PostUser)
-	allUsersResponse := &server.Response{
+	allUsersResponse := &server.StringResponse{
 		Status: 200,
 		Data:   `[` + strings.Join(mock.Users, ",") + `]`,
 	}
-	registerUserResponse := &server.Response{
+	registerUserResponse := &server.StringResponse{
 		Status: 200,
 		Data:   mock.PostUser.ToString(),
 	}
-	loginUserResponse := &server.Response{
+	loginUserResponse := &server.StringResponse{
 		Status: 200,
 		Data:   "token",
 	}

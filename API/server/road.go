@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 9:46:55 pm
+ * Last Modified: Sunday, 28th October 2018 8:13:27 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -41,13 +41,10 @@ type Road struct {
 	HandlerFunc     context.CustomHandler
 }
 
+// appendTo log the happened road and add it to the router section with a prepared handler
 func (r *Road) appendTo(ctx *context.AppContext, preparedHandler *context.HandlerWrapper, router *mux.Router) {
-	ctx.Log.Info.Printf("%s __ Load... __ %s %s%s", utils.Use().GetStack(r.appendTo), r.Method, ctx.Opts.GetAddress(), r.Name)
-	router.StrictSlash(true).
-		Methods(r.Method).
-		Name(r.Name).
-		Path(r.Pattern).
-		Handler(preparedHandler)
+	ctx.Log.Info.Printf("%s __ Load... __ %v", utils.Use().GetStack(r.appendTo), r.Name)
+	router.StrictSlash(true).Handle(r.Pattern, preparedHandler).Methods(r.Method).Name(r.Name)
 }
 
 // GetRoadKit must return a map wih a key for the
@@ -56,9 +53,11 @@ func (r *Road) appendTo(ctx *context.AppContext, preparedHandler *context.Handle
 func GetRoadKit() map[string]RoadGetter {
 	return map[string]RoadGetter{
 		// exemple for localhost:8000/user/* set of road:
-		"/user":   getUserRouting,
-		"/auth":   getAuthRouting,
-		"/backup": getBackupRouting,
+		"/user":        getUserRouting,
+		"/auth":        getAuthRouting,
+		"/backup":      getBackupRouting,
+		"/elastic":     getElasticRouting,
+		"/transaction": getTransactionRouting,
 	}
 }
 
@@ -66,55 +65,49 @@ func GetRoadKit() map[string]RoadGetter {
 func getUserRouting() []*Road {
 	return []*Road{
 		{
-			Name:            "/user",
+			Name:            GET + " /user",
 			Method:          GET,
-			Pattern:         "/",
+			Pattern:         "",
 			StatusProtected: false,
 			HandlerFunc:     handler.GetUsers,
 		},
-		/*
-			 * exemple for GET /user/{id}
-			 * retrieve id value with vars := mux.Vars(*http.Request),
-			 * id will be indexed in vars["id"]
-			{
-				Name: "GET /user/{id}",
-				Method: GET,
-				Pattern: "/{id}",
-				StatusProtected: false,
-				HandlerFunc: handler.?,
-			},
-			 *
-		*/
-		/*
-			 * exemple for POST /user
-			 * retrieve data in *http.Request.body
-			 * see model.User.UnmarshalFromRequest method
-			 * a POST on user exist in authentication.go/Register
-			{
-				Name: "POST /user",
-				Method: POST,
-				Pattern: "/",
-				StatusProtected: false,
-				HandlerFunc: handler.?,
-			},
-			 *
-		*/
+		{
+			Name:            DELETE + " /user",
+			Method:          DELETE,
+			Pattern:         "",
+			StatusProtected: false,
+			HandlerFunc:     handler.RemoveAllUsers,
+		},
 	}
 }
 
 func getAuthRouting() []*Road {
 	return []*Road{
 		{
-			Name:            "/auth/login",
+			Name:            OPTIONS + " /auth/login",
+			Method:          OPTIONS,
+			Pattern:         "/login",
+			StatusProtected: false,
+			HandlerFunc:     handler.Option,
+		},
+		{
+			Name:            OPTIONS + " /auth/register",
+			Method:          OPTIONS,
+			Pattern:         "/register",
+			StatusProtected: false,
+			HandlerFunc:     handler.Option,
+		},
+		{
+			Name:            POST + " /auth/login",
 			Method:          POST,
 			Pattern:         "/login",
 			StatusProtected: false,
 			HandlerFunc:     handler.Login,
 		},
 		{
-			Name:            "/auth/register",
+			Name:            POST + " /auth/register",
 			Method:          POST,
-			Pattern:         "register",
+			Pattern:         "/register",
 			StatusProtected: false,
 			HandlerFunc:     handler.Register,
 		},
@@ -124,11 +117,105 @@ func getAuthRouting() []*Road {
 func getBackupRouting() []*Road {
 	return []*Road{
 		{
-			Name:            "/backup",
+			Name:            GET + " /backup",
 			Method:          GET,
-			Pattern:         "/",
+			Pattern:         "",
 			StatusProtected: false,
 			HandlerFunc:     handler.BackupBoltDatabase,
+		},
+	}
+}
+
+func getElasticRouting() []*Road {
+	return []*Road{
+		{
+			Name:            GET + " /elastic/index/all",
+			Method:          GET,
+			Pattern:         "/index/all",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetCreateIndexation,
+		},
+		{
+			Name:            GET + " /elastic/index/{index}",
+			Method:          GET,
+			Pattern:         "/index/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetCreateIndex,
+		},
+		{
+			Name:            GET + " /elastic/rmindex/all",
+			Method:          GET,
+			Pattern:         "/rmindex/all",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetRemoveIndexation,
+		},
+		{
+			Name:            GET + " /elastic/rmindex/{index}",
+			Method:          GET,
+			Pattern:         "/rmindex/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetRemoveIndex,
+		},
+		{
+			Name:            GET + " /elastic/reindex/all",
+			Method:          GET,
+			Pattern:         "/reindex/all",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetReindexation,
+		},
+		{
+			Name:            GET + " /elastic/reindex/{index}",
+			Method:          GET,
+			Pattern:         "/reindex/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetReindex,
+		},
+		{
+			Name:            GET + " /elastic/indexdata",
+			Method:          GET,
+			Pattern:         "/indexdata",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetIndexationData,
+		},
+		{
+			Name:            GET + " /elastic/indexdata/{index}",
+			Method:          GET,
+			Pattern:         "/indexdata/{index}",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetIndexData,
+		},
+	}
+}
+
+func getTransactionRouting() []*Road {
+	return []*Road{
+		{
+			Name:            OPTIONS + " /transaction",
+			Method:          OPTIONS,
+			Pattern:         "",
+			StatusProtected: false,
+			HandlerFunc:     handler.Option,
+		},
+		{
+			Name:            POST + " /transaction",
+			Method:          POST,
+			Pattern:         "",
+			StatusProtected: false,
+			HandlerFunc:     handler.AddTransaction,
+		},
+		{
+			Name:            GET + " /transaction",
+			Method:          GET,
+			Pattern:         "",
+			StatusProtected: false,
+			HandlerFunc:     handler.GetTransaction,
+		},
+		{
+			Name:            DELETE + " /transaction",
+			Method:          DELETE,
+			Pattern:         "",
+			StatusProtected: false,
+			HandlerFunc:     handler.RemoveAllTX,
 		},
 	}
 }

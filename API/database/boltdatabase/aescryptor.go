@@ -1,6 +1,6 @@
 // Thanks to: https://github.com/linkthings/boltsec
 
-package database
+package boltdatabase
 
 import (
 	"crypto/aes"

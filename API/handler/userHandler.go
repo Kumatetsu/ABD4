@@ -5,7 +5,7 @@
  * Author: billaud_j castel_a masera_m
  * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 2:36:54 pm
+ * Last Modified: Saturday, 27th October 2018 6:08:47 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -15,27 +15,42 @@ package handler
 
 import (
 	"ABD4/API/context"
+	"ABD4/API/iserial"
 	"ABD4/API/utils"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
 // GetUsers handler for Get /users
 func GetUsers(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
-	users, err := ctx.UserManager.Seek()
+	var toSerialize []iserial.Serializable
+	users, err := ctx.UserManager.FindAll()
 	if err != nil {
 		msg := fmt.Sprintf("%s Seek users failed: %s", utils.Use().GetStack(GetUsers), err.Error())
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, "")
 		return
 	}
-	usersJSON, err := json.Marshal(users)
+	for _, u := range users {
+		toSerialize = append(toSerialize, u)
+	}
+	ctx.Rw.SendArraySerializable(ctx, w, http.StatusOK, toSerialize, "", "")
+	return
+}
+
+// RemoveAllUsers handler for DELETE /users
+func RemoveAllUsers(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
+	deleted, err := ctx.UserManager.RemoveAll()
 	if err != nil {
-		msg := fmt.Sprintf("%s marshal failed: %s", utils.Use().GetStack(GetUsers), err.Error())
-		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "encoding users failed", msg)
+		msg := fmt.Sprintf("%s Removing users failed", utils.Use().GetStack(RemoveAllUsers))
+		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
-	response := ctx.Rw.NewResponse(200, string(usersJSON), "", "")
-	response.SendItSelf(ctx, w)
+	err = ctx.RemoveIndex(context.USERS)
+	if err != nil {
+		msg := fmt.Sprintf("%s Failed to remove %s index", utils.Use().GetStack(RemoveAllUsers), context.USERS)
+		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+	}
+	msg := fmt.Sprintf("%s %d successfully removed", utils.Use().GetStack(RemoveAllUsers), deleted)
+	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")
 	return
 }
