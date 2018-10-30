@@ -16,11 +16,15 @@ package server
 import (
 	"ABD4/API/context"
 	"ABD4/API/server/middleware"
-	"fmt"
+	"ABD4/API/server/road"
+	"ABD4/API/utils"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
+
+// RoadGetter type for router definition
+type RoadGetter func() []*road.Road
 
 // Routing function is the entry point to build the API routing
 func Routing(ctx *context.AppContext) *mux.Router {
@@ -28,14 +32,29 @@ func Routing(ctx *context.AppContext) *mux.Router {
 	router := &mux.Router{}
 	// We set the Response object memory space
 	ctx.Rw = &Response{}
-	appendRootRoad(ctx, router)
-	appendRoadKit(ctx, router)
+	for url, roadGetter := range map[string]RoadGetter{
+		// exemple for localhost:8000/user/* set of road:
+		"/user":        road.GetUserRouting,
+		"/auth":        road.GetAuthRouting,
+		"/backup":      road.GetBackupRouting,
+		"/elastic":     road.GetElasticRouting,
+		"/transaction": road.GetTransactionRouting,
+		"/tarif":       road.GetTarifRouting,
+		"/theme":       road.GetThemeRouting,
+	} {
+		routing := router.PathPrefix(url).Subrouter()
+		for _, road := range roadGetter() {
+			// call prepareHandler on each context.HandlerWrapper
+			road.AppendTo(ctx, ApplyMiddlewares(ctx, road), routing)
+		}
+	}
+	AngularRouting(ctx, router)
 	return router
 }
 
-// prepareHandler prepare the stack of methods called for each road
+// applyMiddlewares prepare the stack of methods called for each road
 // last registered is first to be called
-func prepareHandler(ctx *context.AppContext, r *Road) *context.HandlerWrapper {
+func ApplyMiddlewares(ctx *context.AppContext, r *road.Road) *context.HandlerWrapper {
 	wrapper := &context.HandlerWrapper{
 		Ctx: ctx,
 		H:   r.HandlerFunc,
@@ -47,33 +66,13 @@ func prepareHandler(ctx *context.AppContext, r *Road) *context.HandlerWrapper {
 	return wrapper
 }
 
-// separate function to append a handler on localhost/
-func appendRootRoad(ctx *context.AppContext, router *mux.Router) {
-	rootRoads := []*Road{
-		&Road{
-			Name:    "/",
-			Method:  GET,
-			Pattern: "/",
-			HandlerFunc: func(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
-				// w.Write take a []byte, fmt.Sprintf return a string
-				// we cast with []byte(string)
-				w.Write([]byte(fmt.Sprintf("Root road: %s on %s", GET, ctx.Opts.GetAddress())))
-			},
-		},
+func AngularRouting(ctx *context.AppContext, router *mux.Router) {
+	home := road.GetHome()
+	routes := road.GetWebAppRouting(ctx)
+	for _, r := range routes {
+		ctx.Log.Info.Printf("%s __ Load... __ %v", utils.Use().GetStack(AngularRouting), r.Name)
+		router.PathPrefix(r.Pattern).Handler(http.StripPrefix(r.Pattern, ApplyMiddlewares(ctx, home)))
 	}
-	for _, road := range rootRoads {
-		road.appendTo(ctx, prepareHandler(ctx, road), router)
-	}
-}
-
-// appendRoadKit use GetRoadKit function to build the routing
-// with sections defined in road.go
-func appendRoadKit(ctx *context.AppContext, router *mux.Router) {
-	for url, roadGetter := range GetRoadKit() {
-		routing := router.PathPrefix(url).Subrouter()
-		for _, road := range roadGetter() {
-			// call prepareHandler on each context.HandlerWrapper
-			road.appendTo(ctx, prepareHandler(ctx, road), routing)
-		}
-	}
+	ctx.Log.Info.Printf("%s __ Load... __ %v", utils.Use().GetStack(AngularRouting), home.Name)
+	router.PathPrefix(home.Pattern).Handler(http.FileServer(http.Dir(ctx.Opts.GetWebDir())))
 }
