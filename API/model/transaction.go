@@ -82,12 +82,13 @@ func (t *Transaction) UnmarshalFromRequest(r *http.Request) error {
 	return nil
 }
 
-// Marshal implement ISerial
+// MarshalJSON implement json.MarshalJSON
 func (t Transaction) MarshalJSON() ([]byte, error) {
 	// we parse t in map[string]interface{}
 	return json.Marshal(t.toMap())
 }
 
+// use reflect to define a generic map[string]interface{}
 func (t *Transaction) toMap() map[string]interface{} {
 	mapped := make(map[string]interface{})
 	structure := reflect.ValueOf(t).Elem()
@@ -102,6 +103,7 @@ func (t *Transaction) toMap() map[string]interface{} {
 	return mapped
 }
 
+// GetMapped allow us to access t.mapped, making it a singleton in Transaction
 func (t Transaction) GetMapped() map[string]interface{} {
 	if len(t.mapped) == 0 {
 		t.toMap()
@@ -109,6 +111,8 @@ func (t Transaction) GetMapped() map[string]interface{} {
 	return t.mapped
 }
 
+// ToES is a ack to avoid parsing-mapping error in elastic search
+// it seems that ES can't parse string representation of hex mongo ObjecID
 func (t *Transaction) ToES() *Transaction {
 	tToES := t
 	tToES.ID = ""

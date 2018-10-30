@@ -71,11 +71,13 @@ func RemoveAllTX(ctx *context.AppContext, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		msg := fmt.Sprintf("%s failed to remove %s from %s", utils.Use().GetStack(RemoveAllTX), context.TXs, ctx.Opts.GetDatabaseType())
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+		return
 	}
 	err = ctx.RemoveIndex(context.TXs)
 	if err != nil {
 		msg := fmt.Sprintf("%s failed to remove %s index", utils.Use().GetStack(RemoveAllTX), context.TXs)
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+		return
 	}
 	msg := fmt.Sprintf("%s %d %s successfully deleted", utils.Use().GetStack(RemoveAllTX), deleted, context.TX)
 	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")

@@ -15,7 +15,7 @@ if (empty($argv[1]) == true) {
 
 
 while (true) {
-    usleep($timer);
+    // usleep($timer);
     $firstAge = $escapegame->getAge();
     $nbTickets = $escapegame->getNbTickets();
     $firstCivility = $escapegame->getGender(false);
