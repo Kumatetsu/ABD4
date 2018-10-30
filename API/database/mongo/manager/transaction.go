@@ -197,7 +197,7 @@ func getDummyTransactions(n int) []model.Transaction {
 			Nom:      "Carmine",
 			Prenom:   "Art",
 			Age:      64 + it,
-			Email:	  "dummyMail@test.com",
+			Email:    "dummyMail@test.com",
 		}
 
 		transaction := model.Transaction{

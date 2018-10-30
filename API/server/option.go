@@ -27,6 +27,7 @@ type Option struct {
 	mongoPort string
 	datapath  string
 	es        string
+	webdir    string
 	embedES   bool
 	index     bool
 	reindex   bool
@@ -40,7 +41,7 @@ var (
 	TEST = "test"
 )
 
-func (o *Option) Hydrate(env, dir, ip, port, logpath, dbType, mongoIP, mongoPort, datapath, es string, embedES, index, reindex, rmindex, debug bool) {
+func (o *Option) Hydrate(env, dir, ip, port, logpath, dbType, mongoIP, mongoPort, datapath, es, webdir string, embedES, index, reindex, rmindex, debug bool) {
 	o.exe = dir
 	o.env = env
 	o.embedES = embedES
@@ -50,6 +51,7 @@ func (o *Option) Hydrate(env, dir, ip, port, logpath, dbType, mongoIP, mongoPort
 	o.dbType = dbType
 	o.logpath = logpath
 	o.es = es
+	o.webdir = webdir
 	o.debug = debug
 	o.index = index
 	o.reindex = reindex
@@ -154,6 +156,10 @@ func (o *Option) GetMongoIP() string {
 
 func (o *Option) GetMongoPort() string {
 	return o.mongoPort
+}
+
+func (o *Option) GetWebDir() string {
+	return filepath.Join(o.exe, o.webdir)
 }
 
 func (o *Option) SetMongoPort(port string) {

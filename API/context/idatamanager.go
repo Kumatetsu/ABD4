@@ -55,3 +55,15 @@ type ITransactionManager interface {
 	// For dev
 	FakePersist(n int) error
 }
+
+// ITarifManager define what is needed to access
+// tarif data whatever database is used
+type ITarifManager interface {
+	IDataManager
+	FindAll() ([]*model.Tarif, error)
+	FindBy(map[string]string) ([]*model.Tarif, error)
+	FindOneBy(map[string]string) (*model.Tarif, error)
+	RemoveBy(map[string]string) (int, error)
+	RemoveAll() (int, error)
+	Create(tx *model.Tarif) (*model.Tarif, error)
+}

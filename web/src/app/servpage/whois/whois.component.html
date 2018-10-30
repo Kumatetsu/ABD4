@@ -1,0 +1,11 @@
+<div class="row">
+  <div class="col-md-4">
+    <img src="{{ image }}" alt="logo" style="max-width: 90%;margin: auto;"/>
+  </div>
+  <div class="col-md-8">
+    <h3><em class="title">{{ title }}</em></h3>
+    <p *ngFor="let phrase of phrases; let i = index">
+      {{ phrase }}
+    </p>
+  </div>
+</div>

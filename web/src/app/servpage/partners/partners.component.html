@@ -1,0 +1,17 @@
+<div style="margin-bottom: 3%;"></div>
+<hr style="color: rgb(63, 86, 121);" />
+<div class="row">
+  <div class="col-md text-center">
+    <h3><em class="title">{{ partnersintro }}</em></h3>
+  </div>
+</div>
+<div style="margin-bottom: 3%;"></div>
+<hr style="color: rgb(63, 86, 121);" />
+<div style="margin-bottom: 3%;"></div>
+<div class="row">
+  <div *ngFor="let path of partners; let i = index" class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+    <div class="card bg-light" style="max-width: 10rem; max-height: 25rem; margin:1rem;">
+      <img class="card-img-top" src="{{ path.url }}" style="max-height: 10rem;margin: auto;" alt="{{ path.key }}">
+    </div>
+  </div>
+</div>

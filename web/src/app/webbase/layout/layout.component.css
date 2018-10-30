@@ -1,0 +1,9 @@
+.container {
+    min-height:100% !important;
+}
+.toVerticallyCenter {
+    align-items: center!important;
+}
+.title {
+    border-bottom: solid 1px  rgb(63, 86, 121);
+}

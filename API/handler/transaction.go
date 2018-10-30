@@ -17,6 +17,7 @@ import (
 	"ABD4/API/context"
 	"ABD4/API/iserial"
 	"ABD4/API/model"
+	"ABD4/API/service"
 	"ABD4/API/utils"
 	"fmt"
 	"net/http"
@@ -46,6 +47,11 @@ func AddTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "Decode request data failed", err.Error())
 		return
 	}
+	err = service.Tarif(ctx).CalculateTotal(transaction)
+	if err != nil {
+		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "defining price failed", err.Error())
+		return
+	}
 	transaction, err = ctx.TransactionManager.Create(transaction)
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "Insert transaction in mongo failed", err.Error())
@@ -71,11 +77,13 @@ func RemoveAllTX(ctx *context.AppContext, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		msg := fmt.Sprintf("%s failed to remove %s from %s", utils.Use().GetStack(RemoveAllTX), context.TXs, ctx.Opts.GetDatabaseType())
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+		return
 	}
 	err = ctx.RemoveIndex(context.TXs)
 	if err != nil {
 		msg := fmt.Sprintf("%s failed to remove %s index", utils.Use().GetStack(RemoveAllTX), context.TXs)
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+		return
 	}
 	msg := fmt.Sprintf("%s %d %s successfully deleted", utils.Use().GetStack(RemoveAllTX), deleted, context.TX)
 	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")

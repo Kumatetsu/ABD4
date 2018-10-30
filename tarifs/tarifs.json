@@ -1,0 +1,6 @@
+[
+    {"description": "Tarif plein", "prix": 10},
+    {"description": "Tarif reduit", "prix": 8},
+    {"description": "Tarif senior", "prix": 7},
+    {"description": "Tarif etudiant", "prix": 7}
+]

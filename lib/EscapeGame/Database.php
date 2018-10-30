@@ -43,10 +43,10 @@ class Database
         if ($age < 18) {
             return 'Tarif etudiant';
         } else if ($age >= 55) {
-            return 'Senior';
+            return 'Tarif senior';
         } else {
             if ($rand < 70) {
-                return 'Plein tarif';
+                return 'Tarif plein';
             } else if ($rand >= 70 && $rand <= 89) {
                 return 'Tarif etudiant';
             } else {

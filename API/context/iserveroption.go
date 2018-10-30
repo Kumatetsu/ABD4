@@ -36,4 +36,5 @@ type IServerOption interface {
 	GetIP() string            // return the API ip
 	GetMongoIP() string       // return the mongo server instance ip
 	GetMongoPort() string     // return the mongo server instance port
+	GetWebDir() string        // return the path to the web app folder
 }

@@ -1,0 +1,15 @@
+<div class="row">
+  <div class="col-md center">
+    <h3><em class="title">{{ title }}</em></h3>
+  </div>
+</div>
+<div class="row">
+  <div *ngFor="let tile of tiles; let i = index" class="col-md-4">
+    <div class="card bg-light" style="max-width: 35rem; max-height: 25rem; margin:1rem;">
+      <a href="javascript:function disabler() { return false; }" routerLink="/service"><img class="card-img-top" src="{{ tile.image }}" style="max-height: 10rem;" alt="Card image cap"></a>
+      <div class="card-body">
+        <a href="javascript:function disabler() { return false; }" routerLink="/service" class="card-text">{{ tile.text }}...</a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -51,11 +51,12 @@ func main() {
 	var datapath = flag.String("datapath", "", "define data folder path from exe folder, for bolt db")
 	var mongoIP = flag.String("mip", "127.0.0.1", "define the mongo server ip")
 	var mongoPort = flag.Int("mp", 27017, "define the mongo server ip")
+	var webdir = flag.String("www", "/web/dist/homesite", "define the path to the index.html")
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	flag.Parse()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	flag.Parse()
 	portStr := strconv.Itoa(*port)
 	mongoPortStr := strconv.Itoa(*mongoPort)
 	opts := &server.Option{}
@@ -70,6 +71,7 @@ func main() {
 		mongoPortStr,  // mongo server instane port
 		*datapath,     // for bolt database, this is the path for .dat files from dir
 		*es,           // elasticsearch server instance address
+		*webdir,       // path to index.html
 		*embedES,      // if true we set elastic search, this is default, set to false to deactivate elastic search
 		*index,        // true: users and transactions index will be set in elasticsearch
 		*reindex,      // true: indexes are removed and create, data are pushed in elastic search

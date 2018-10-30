@@ -29,6 +29,7 @@ type AppContext struct {
 	Opts               IServerOption
 	UserManager        IUserManager
 	TransactionManager ITransactionManager
+	TarifManager       ITarifManager
 	Mongo              *mgo.Session
 	ElasticClient      *elastic.Client
 	Log                *logger.AppLogger

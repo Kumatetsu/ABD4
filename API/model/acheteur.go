@@ -28,7 +28,7 @@ type Acheteur struct {
 	Civilite string `json:"Civilite"`
 	Nom      string `json:"Nom"`
 	Prenom   string `json:"Prenom"`
-	Age      int    `json:"Age, float64"`
+	Age      int    `json:"Age,float64"`
 	Email    string `json:"Email"`
 	mapped   map[string]interface{}
 }

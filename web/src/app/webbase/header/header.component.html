@@ -1,0 +1,21 @@
+<nav class="navbar navbar-light my_nav mb-5">
+  <a class="navbar-brand" href="/"><img src="{{ logo }}" style="max-width: 4em;"></a>
+  <div class="navbar-expand mr-auto ">
+    <div class="navbar-nav">
+      <a
+        *ngFor="let entry of menu; let i = index"
+        class="nav-item nav-link active"
+        routerLink="{{entry.url}}"
+        href="javascript:function disabler() { return false; }">
+          <b>{{ entry.text }}</b>
+      </a>
+    </div>
+  </div>
+    <div class="navbar-expand ml-auto navbar-nav">
+      <div class="navbar-nav">
+        <a (click)="translate()" class="nav-item nav-link" href="javascript:function disabler() { return false; }">
+          <i class="fa fa-flag"></i>{{ translateLink }}
+        </a>
+      </div>
+  </div>
+</nav>
