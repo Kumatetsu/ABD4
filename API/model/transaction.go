@@ -33,6 +33,7 @@ type Transaction struct {
 	Acheteur    Acheteur      `json:"Acheteur"`
 	Game        Game          `json:"Game"`
 	Reservation []Reservation `json:"Reservation"`
+	Total       float64       `json:"Total"`
 	createdAt   time.Time
 	updatedAt   time.Time
 	mapped      map[string]interface{}
