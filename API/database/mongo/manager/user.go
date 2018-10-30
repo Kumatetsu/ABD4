@@ -2,13 +2,13 @@
  * File: user.go
  * Project: ABD4/VMD Escape Game
  * File Created: Thursday, 11th October 2018 3:32:09 pm
- * Author: billaud_j castel_a masera_m
- * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
+ * Author: ayad_y billaud_j castel_a masera_m
+ * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
  * Last Modified: Saturday, 27th October 2018 1:21:19 am
  * Modified By: Aurélien Castellarnau
  * -----
- * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
+ * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
  */
 
 package manager

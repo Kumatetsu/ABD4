@@ -2,13 +2,13 @@
  * File: context.go
  * Project: ABD4/VMD Escape Game
  * File Created: Sunday, 30th September 2018 2:24:43 pm
- * Author: billaud_j castel_a masera_m
- * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
+ * Author: ayad_y billaud_j castel_a masera_m
+ * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 7:38:46 pm
+ * Last Modified: Monday, 29th October 2018 5:30:40 pm
  * Modified By: Aurélien Castellarnau
  * -----
- * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
+ * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
  */
 
 package context

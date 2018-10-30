@@ -2,13 +2,13 @@
  * File: idatamanager.go
  * Project: ABD4/VMD Escape Game
  * File Created: Thursday, 11th October 2018 4:41:33 pm
- * Author: billaud_j castel_a masera_m
- * Contact: (billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
+ * Author: ayad_y billaud_j castel_a masera_m
+ * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 2:00:43 pm
+ * Last Modified: Monday, 29th October 2018 10:41:30 pm
  * Modified By: Aurélien Castellarnau
  * -----
- * Copyright © 2018 - 2018 billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
+ * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
  */
 
 package context
