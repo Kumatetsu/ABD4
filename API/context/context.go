@@ -37,6 +37,8 @@ var (
 	USERS   = "users"
 	TX      = "transaction"
 	TXs     = "transactions"
+	TARIF   = "tarif"
+	TARIFS  = "tarifs"
 	SECRET  = "==+VDMEG@ABD4"
 	INDEXES = map[string]string{USER: USERS, TX: TXs}
 )
@@ -81,6 +83,15 @@ func (ctx *AppContext) setDAO(kind string) error {
 			"entity": TXs,
 		})
 		err = ctx.TransactionManager.SetDB(mongo)
+		if err != nil {
+			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+		}
+		ctx.TarifManager = &mongoM.TarifManager{}
+		err = ctx.TarifManager.Init(map[string]string{
+			"dbName": PROJECT,
+			"entity": TARIFS,
+		})
+		err = ctx.TarifManager.SetDB(mongo)
 		if err != nil {
 			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
 		}

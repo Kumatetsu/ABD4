@@ -17,6 +17,7 @@ import (
 	"ABD4/API/context"
 	"ABD4/API/iserial"
 	"ABD4/API/model"
+	"ABD4/API/service"
 	"ABD4/API/utils"
 	"fmt"
 	"net/http"
@@ -44,6 +45,11 @@ func AddTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 	err := transaction.UnmarshalFromRequest(r)
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "Decode request data failed", err.Error())
+		return
+	}
+	err = service.Tarif(ctx).CalculateTotal(transaction)
+	if err != nil {
+		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "defining price failed", err.Error())
 		return
 	}
 	transaction, err = ctx.TransactionManager.Create(transaction)
