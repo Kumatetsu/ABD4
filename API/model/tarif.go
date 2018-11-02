@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 1:29:27 am
+ * Last Modified: Tuesday, 30th October 2018 10:03:05 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -91,4 +91,12 @@ func (t Tarif) GetMapped() map[string]interface{} {
 		t.toMap()
 	}
 	return t.mapped
+}
+
+// ToES is a ack to avoid parsing-mapping error in elastic search
+// it seems that ES can't parse string representation of hex mongo ObjecID
+func (t *Tarif) ToES() *Tarif {
+	tToES := t
+	tToES.ID = ""
+	return tToES
 }

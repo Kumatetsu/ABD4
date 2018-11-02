@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 29th October 2018 5:30:40 pm
+ * Last Modified: Friday, 2nd November 2018 5:24:30 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -15,7 +15,7 @@ package context
 
 import (
 	boltM "ABD4/API/database/boltdatabase/manager"
-	"ABD4/API/database/mongo"
+	mongoDB "ABD4/API/database/mongo"
 	mongoM "ABD4/API/database/mongo/manager"
 	"ABD4/API/elasticsearch"
 	"ABD4/API/iserial"
@@ -27,6 +27,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/mgo.v2"
+	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 var (
@@ -34,14 +37,35 @@ var (
 	MONGO   = "mongo"
 	BOLT    = "bolt"
 	USER    = "user"
-	USERS   = "users"
+	USERS   = PROJECT + "-" + "users"
 	TX      = "transaction"
-	TXs     = "transactions"
+	TXs     = PROJECT + "-" + "transactions"
 	TARIF   = "tarif"
-	TARIFS  = "tarifs"
+	TARIFS  = PROJECT + "-" + "tarifs"
+	THEME   = "theme"
+	THEMES  = PROJECT + "-" + "themes"
 	SECRET  = "==+VDMEG@ABD4"
-	INDEXES = map[string]string{USER: USERS, TX: TXs}
+	INDEXES = map[string]string{USER: USERS, TX: TXs, TARIF: TARIFS, THEME: THEMES}
 )
+
+// AppContext define globals tools and variable usefull in the API
+// It embed the dao's objects (XxxManager *manager.XxxManager),
+// a ResponseWriter which offer shorthand to send uniformised Response
+type AppContext struct {
+	Rw                 IResponseWriter
+	SessionUser        ISessionUser
+	Opts               IServerOption
+	UserManager        IUserManager
+	TransactionManager ITransactionManager
+	TarifManager       ITarifManager
+	ThemeManager       IThemeManager
+	Mongo              *mgo.Session
+	ElasticClient      *elastic.Client
+	Log                *logger.AppLogger
+	Exe                string
+	Logpath            string
+	DataPath           string
+}
 
 // logState log final parameters at the launch of API
 func (ctx *AppContext) logState() {
@@ -61,10 +85,25 @@ func (ctx *AppContext) logState() {
 // setDao define database access relying on GetDatabaseType return
 // accept mongo or bolt database
 func (ctx *AppContext) setDAO(kind string) error {
+	var err error
+
 	switch kind {
 	case MONGO:
+		var mongo *mgo.Session
 		mongoAddr := ctx.Opts.GetMongoIP() + ":" + ctx.Opts.GetMongoPort()
-		mongo, err := mongo.GetMongo(mongoAddr)
+
+		if ctx.Opts.GetMongoReplicatSet() {
+			ctx.Log.Info.Printf("%s Set mongo with replicat set", utils.Use().GetStack(ctx.setDAO))
+			mongoHosts := []string{
+				mongoAddr,
+				ctx.Opts.GetReplicatIP() + ":" + ctx.Opts.GetReplicatPort(),
+			}
+			mongo, err = mongoDB.GetMongoReplicatSet(mongoHosts, PROJECT)
+			ctx.Log.Info.Printf("%s mongo instanciation done", utils.Use().GetStack(ctx.setDAO))
+		} else {
+			ctx.Log.Info.Printf("%s Set mongo with direct dial", utils.Use().GetStack(ctx.setDAO))
+			mongo, err = mongoDB.GetMongo(mongoAddr)
+		}
 		if err != nil {
 			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
 		}
@@ -80,7 +119,7 @@ func (ctx *AppContext) setDAO(kind string) error {
 		ctx.TransactionManager = &mongoM.TransactionManager{}
 		err = ctx.TransactionManager.Init(map[string]string{
 			"dbName": PROJECT,
-			"entity": TXs,
+			"entity": TX,
 		})
 		err = ctx.TransactionManager.SetDB(mongo)
 		if err != nil {
@@ -89,9 +128,18 @@ func (ctx *AppContext) setDAO(kind string) error {
 		ctx.TarifManager = &mongoM.TarifManager{}
 		err = ctx.TarifManager.Init(map[string]string{
 			"dbName": PROJECT,
-			"entity": TARIFS,
+			"entity": TARIF,
 		})
 		err = ctx.TarifManager.SetDB(mongo)
+		if err != nil {
+			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+		}
+		ctx.ThemeManager = &mongoM.ThemeManager{}
+		err = ctx.ThemeManager.Init(map[string]string{
+			"dbName": PROJECT,
+			"entity": THEME,
+		})
+		err = ctx.ThemeManager.SetDB(mongo)
 		if err != nil {
 			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
 		}
@@ -111,12 +159,21 @@ func (ctx *AppContext) setDAO(kind string) error {
 // there is nothing to prevent the reindexation of data
 // its easy to fix a bad indexation using rmindex/index/reindex options
 func (ctx *AppContext) indexData() error {
-	if ctx.UserManager.GetDBName() == "" || ctx.TransactionManager.GetDBName() == "" {
+	ctx.Log.Info.Printf("%s managers: %s, %s, %s, %s",
+		utils.Use().GetStack(ctx.indexData),
+		ctx.UserManager.GetEntity(),
+		ctx.TransactionManager.GetEntity(),
+		ctx.TarifManager.GetEntity(),
+		ctx.ThemeManager.GetEntity())
+	if ctx.UserManager.GetDBName() == "" ||
+		ctx.TransactionManager.GetDBName() == "" ||
+		ctx.TarifManager.GetDBName() == "" ||
+		ctx.ThemeManager.GetDBName() == "" {
 		return fmt.Errorf("%s At list one data manager is missing", utils.Use().GetStack(ctx.indexData))
 	}
 	users, err := ctx.UserManager.FindAll()
 	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
 	}
 	var serialUsers []iserial.Serializable
 	for _, u := range users {
@@ -124,11 +181,11 @@ func (ctx *AppContext) indexData() error {
 	}
 	err = ctx.IndexArrayData(serialUsers, USERS, USER)
 	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
 	}
 	tx, err := ctx.TransactionManager.FindAll()
 	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
 	}
 	var serialTx []iserial.Serializable
 	for _, transaction := range tx {
@@ -136,7 +193,31 @@ func (ctx *AppContext) indexData() error {
 	}
 	err = ctx.IndexArrayData(serialTx, TXs, TX)
 	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
+	}
+	tarifs, err := ctx.TarifManager.FindAll()
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
+	}
+	var serialTarifs []iserial.Serializable
+	for _, tarif := range tarifs {
+		serialTarifs = append(serialTarifs, tarif.ToES())
+	}
+	err = ctx.IndexArrayData(serialTarifs, TARIFS, TARIF)
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
+	}
+	themes, err := ctx.ThemeManager.FindAll()
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
+	}
+	var serialThemes []iserial.Serializable
+	for _, theme := range themes {
+		serialThemes = append(serialThemes, theme.ToES())
+	}
+	err = ctx.IndexArrayData(serialThemes, THEMES, THEME)
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.indexData), err.Error())
 	}
 	return nil
 }
@@ -153,11 +234,20 @@ func (ctx *AppContext) embedElasticSearch() {
 	}
 	// if flag rmindex is passed to .exe, indexes 'users' and 'transactions' are removed
 	if ctx.Opts.GetRmindex() {
+		ctx.Log.Info.Printf("%s removing indexes", utils.Use().GetStack(ctx.embedElasticSearch))
 		err = elasticsearch.RemoveIndex(ctx.ElasticClient, USERS)
 		if err != nil {
 			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
 		}
 		err = elasticsearch.RemoveIndex(ctx.ElasticClient, TXs)
+		if err != nil {
+			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		}
+		err = elasticsearch.RemoveIndex(ctx.ElasticClient, TARIFS)
+		if err != nil {
+			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		}
+		err = elasticsearch.RemoveIndex(ctx.ElasticClient, THEMES)
 		if err != nil {
 			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
 		}
@@ -168,6 +258,11 @@ func (ctx *AppContext) embedElasticSearch() {
 	// if reindex, data are pulled from database and send to elasticsearch
 	// there is nothing to prevent duplicate in elastic
 	if ctx.Opts.GetIndex() || ctx.Opts.GetReindex() {
+		if ctx.Opts.GetReindex() {
+			ctx.Log.Info.Printf("%s reindexation", utils.Use().GetStack(ctx.embedElasticSearch))
+		} else {
+			ctx.Log.Info.Printf("%s indexation", utils.Use().GetStack(ctx.embedElasticSearch))
+		}
 		err = elasticsearch.CreateIndexation(ctx.ElasticClient, ctx.Opts.GetReindex())
 		if err != nil {
 			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())

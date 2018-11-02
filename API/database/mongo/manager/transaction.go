@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 29th October 2018 5:20:36 pm
+ * Last Modified: Tuesday, 30th October 2018 9:07:46 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -101,7 +101,7 @@ func (tm TransactionManager) GetDBName() string {
 	return tm.dbName
 }
 
-// IUserManager implementation
+// TransactionManager implementation
 
 func (tm TransactionManager) FindAll() ([]*model.Transaction, error) {
 	c := tm.session.DB(tm.dbName).C(tm.entity)

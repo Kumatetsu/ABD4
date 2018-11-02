@@ -10,7 +10,8 @@
        "Nom":"Interminable attente chez le medecin",
        "Jour":"2018-09-07",
        "Horaire":"05:30",
-       "VR":"Non"
+       "VR":"Non",
+       "Themes": ["Psychologie", "Stress"]
     },
     "Reservation":[
        {

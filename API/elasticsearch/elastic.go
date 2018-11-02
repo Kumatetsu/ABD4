@@ -113,7 +113,6 @@ func RemoveIndex(es *elastic.Client, index string) error {
 	if err != nil {
 		return err
 	}
-
 	if exists {
 		deleteIndex, err := es.DeleteIndex(index).Do(context.Background())
 		if err != nil {

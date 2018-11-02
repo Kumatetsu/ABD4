@@ -59,7 +59,7 @@ func AddTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 	}
 	// si on utilise elastic search on index la nouvelle transaction
 	if ctx.Opts.GetEmbedES() {
-		err = ctx.IndexData(transaction, context.TXs, context.TX)
+		err = ctx.IndexData(transaction.ToES(), context.TXs, context.TX)
 		if err != nil {
 			msg := fmt.Sprintf("%s failed to index transaction in elasticsearch", utils.Use().GetStack(AddTransaction))
 			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())

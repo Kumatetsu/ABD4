@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 10:41:01 pm
+ * Last Modified: Wednesday, 31st October 2018 9:36:25 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -137,36 +137,21 @@ func GetReindex(ctx *context.AppContext, w http.ResponseWriter, r *http.Request)
 }
 
 func GetIndexationData(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
+	var err error
 	// On itère sur les indexes possibles
 	for entity, index := range context.INDEXES {
 		// variable servant à la sérialisation
 		var toSerialize []iserial.Serializable
 		// en fonction de l'entité concernée par l'index
 		// on récupère les données à partir du manager correspondant
-		switch entity {
-		case context.USER:
-			users, err := ctx.UserManager.FindAll()
-			if err != nil {
-				msg := fmt.Sprintf("%s failed to retrieve users", utils.Use().GetStack(GetIndexationData))
-				ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
-				return
-			}
-			for _, u := range users {
-				toSerialize = append(toSerialize, u.ToES())
-			}
-		case context.TX:
-			txs, err := ctx.TransactionManager.FindAll()
-			if err != nil {
-				msg := fmt.Sprintf("%s failed to retrieve transactions", utils.Use().GetStack(GetIndexationData))
-				ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
-				return
-			}
-			for _, tx := range txs {
-				toSerialize = append(toSerialize, tx.ToES())
-			}
+		_, toSerialize, err = switchDataIndexation(ctx, index)
+		if err != nil {
+			msg := fmt.Sprintf("%s failed to retrieve users", utils.Use().GetStack(GetIndexationData))
+			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+			return
 		}
 		// on indexe les données correspondantes, sur un lot important, cela peut prendre du temps
-		err := ctx.IndexArrayData(toSerialize, index, entity)
+		err = ctx.IndexArrayData(toSerialize, index, entity)
 		if err != nil {
 			msg := fmt.Sprintf("%s failed to index %s", utils.Use().GetStack(GetIndexationData), index)
 			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
@@ -179,6 +164,10 @@ func GetIndexationData(ctx *context.AppContext, w http.ResponseWriter, r *http.R
 }
 
 func GetIndexData(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
+	// variable servant à la sérialisation
+	var toSerialize []iserial.Serializable
+	var entity string
+	var err error
 	index, ok := mux.Vars(r)["index"]
 	if !ok {
 		msg := fmt.Sprintf("%s missing index parameter", utils.Use().GetStack(GetIndexData))
@@ -186,37 +175,16 @@ func GetIndexData(ctx *context.AppContext, w http.ResponseWriter, r *http.Reques
 		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, msg, err.Error())
 		return
 	}
-	var entity string
-	// variable servant à la sérialisation
-	var toSerialize []iserial.Serializable
 	// en fonction de l'entité concernée par l'index
-	// on récupère les données à partir du manager correspondant
-	switch index {
-	case context.USERS:
-		entity = context.USER
-		users, err := ctx.UserManager.FindAll()
-		if err != nil {
-			msg := fmt.Sprintf("%s failed to retrieve users", utils.Use().GetStack(GetIndexData))
-			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
-			return
-		}
-		for _, u := range users {
-			toSerialize = append(toSerialize, u.ToES())
-		}
-	case context.TXs:
-		entity = context.TX
-		txs, err := ctx.TransactionManager.FindAll()
-		if err != nil {
-			msg := fmt.Sprintf("%s failed to retrieve transactions", utils.Use().GetStack(GetIndexData))
-			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
-			return
-		}
-		for _, tx := range txs {
-			toSerialize = append(toSerialize, tx.ToES())
-		}
-	}
+	// on récupère les données à partir du manager correspondante
 	// on indexe les données correspondantes, sur un lot important, cela peut prendre du temps
-	err := ctx.IndexArrayData(toSerialize, index, entity)
+	entity, toSerialize, err = switchDataIndexation(ctx, index)
+	if err != nil {
+		msg := fmt.Sprintf("%s failed to index %s", utils.Use().GetStack(GetIndexData), index)
+		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+		return
+	}
+	err = ctx.IndexArrayData(toSerialize, index, entity)
 	if err != nil {
 		msg := fmt.Sprintf("%s failed to index %s", utils.Use().GetStack(GetIndexData), index)
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
@@ -225,4 +193,49 @@ func GetIndexData(ctx *context.AppContext, w http.ResponseWriter, r *http.Reques
 	msg := fmt.Sprintf("%s data successfully indexed", utils.Use().GetStack(GetIndexData))
 	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")
 	return
+}
+
+func switchDataIndexation(ctx *context.AppContext, index string) (string, []iserial.Serializable, error) {
+	// variable servant à la sérialisation
+	var toSerialize []iserial.Serializable
+	var entity string
+	switch index {
+	case context.USERS:
+		entity = context.USER
+		users, err := ctx.UserManager.FindAll()
+		if err != nil {
+			return entity, nil, err
+		}
+		for _, u := range users {
+			toSerialize = append(toSerialize, u.ToES())
+		}
+	case context.TXs:
+		entity = context.TX
+		txs, err := ctx.TransactionManager.FindAll()
+		if err != nil {
+			return entity, nil, err
+		}
+		for _, tx := range txs {
+			toSerialize = append(toSerialize, tx.ToES())
+		}
+	case context.TARIFS:
+		entity = context.TARIF
+		tarifs, err := ctx.TarifManager.FindAll()
+		if err != nil {
+			return entity, nil, err
+		}
+		for _, tarif := range tarifs {
+			toSerialize = append(toSerialize, tarif.ToES())
+		}
+	case context.THEMES:
+		entity = context.THEME
+		themes, err := ctx.ThemeManager.FindAll()
+		if err != nil {
+			return entity, nil, err
+		}
+		for _, theme := range themes {
+			toSerialize = append(toSerialize, theme.ToES())
+		}
+	}
+	return entity, toSerialize, nil
 }
