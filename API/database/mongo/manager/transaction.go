@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 9:07:46 pm
+ * Last Modified: Saturday, 3rd November 2018 2:19:01 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -118,7 +118,7 @@ func (tm TransactionManager) FindOneBy(param map[string]string) (*model.Transact
 	c := tm.session.DB(tm.dbName).C(tm.entity)
 	err := c.Find(utils.Use().MapToBSON(param)).One(result)
 	if err != nil {
-		return nil, fmt.Errorf("%s find: %s", utils.Use().GetStack(tm.FindBy), err.Error())
+		return nil, fmt.Errorf("%s find: %s", utils.Use().GetStack(tm.FindOneBy), err.Error())
 	}
 	return result, nil
 }

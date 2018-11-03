@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Friday, 2nd November 2018 5:28:52 pm
+ * Last Modified: Friday, 2nd November 2018 5:59:02 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	ReplicaSetName = "c74b5276378ed3bd70cba37a3ac45fea"
+	ReplicaSetName = "abd4"
 )
 
 func GetMongo(serverAddr string) (*mgo.Session, error) {
@@ -52,11 +52,15 @@ func GetMongoReplicatSet(hosts []string, database string) (*mgo.Session, error) 
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
 		Addrs:          hosts,
 		ReplicaSetName: ReplicaSetName,
+		FailFast:       true,
 	})
 	fmt.Printf("%s Set mongo with replicat set", utils.Use().GetStack(GetMongoReplicatSet))
 	if err != nil {
-		fmt.Printf("%s error: %s", utils.Use().GetStack(GetMongoReplicatSet), err.Error())
-		return nil, fmt.Errorf("%s mgo.DialWithInfo: %s", utils.Use().GetStack(GetMongo), err.Error())
+		session, err = mgo.Dial(hosts[0] + "," + hosts[1])
+		if err != nil {
+			fmt.Printf("%s error: %s", utils.Use().GetStack(GetMongoReplicatSet), err.Error())
+			return nil, fmt.Errorf("%s mgo.DialWithInfo: %s", utils.Use().GetStack(GetMongo), err.Error())
+		}
 	}
 	session.SetMode(mgo.Monotonic, true)
 	return session, nil

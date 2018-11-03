@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 9:49:32 pm
+ * Last Modified: Friday, 2nd November 2018 7:53:28 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -25,12 +25,12 @@ import (
 )
 
 // GetTarifs return all tarif in database
-func GetTarifs(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
+func GetTarif(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	var toSerialize []iserial.Serializable
-	ctx.Log.Info.Printf("%s %s ", utils.Use().GetStack(GetTarifs), "Getting Tarifs")
+	ctx.Log.Info.Printf("%s %s ", utils.Use().GetStack(GetTarif), "Getting Tarifs")
 	tx, err := ctx.TarifManager.FindAll()
 	if err != nil {
-		msg := fmt.Sprintf("%s FindAll failed", utils.Use().GetStack(GetTarifs))
+		msg := fmt.Sprintf("%s FindAll failed", utils.Use().GetStack(GetTarif))
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
