@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 1:13:26 am
+ * Last Modified: Saturday, 3rd November 2018 11:48:52 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -55,14 +55,15 @@ func Routing(ctx *context.AppContext) *mux.Router {
 // applyMiddlewares prepare the stack of methods called for each road
 // last registered is first to be called
 func ApplyMiddlewares(ctx *context.AppContext, r *road.Road) *context.HandlerWrapper {
-	wrapper := &context.HandlerWrapper{
-		Ctx: ctx,
-		H:   r.HandlerFunc,
-	}
+	wrapper := &context.HandlerWrapper{}
+	// Road handler
+	wrapper = wrapper.Wrap(ctx, r.HandlerFunc)
 	wrapper = middleware.SetHeaders(ctx, wrapper)
 	wrapper = middleware.Authenticate(ctx, wrapper, r.StatusProtected)
-	// logger must be the last to be the first...
+	// Logging the request as second step
 	wrapper = middleware.Logger(ctx, wrapper, r.Name)
+	// SetTime must be the last to be the first...
+	wrapper = middleware.SetTime(ctx, wrapper)
 	return wrapper
 }
 

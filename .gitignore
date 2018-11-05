@@ -6,3 +6,5 @@ API/test/log/
 log/
 data/
 .idea/
+kibana-5.5.3-windows-x86/
+elasticsearch-5.5.3/

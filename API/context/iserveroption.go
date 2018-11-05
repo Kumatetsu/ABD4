@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Friday, 2nd November 2018 1:13:55 am
+ * Last Modified: Monday, 5th November 2018 12:13:57 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -40,4 +40,8 @@ type IServerOption interface {
 	GetReplicatIP() string     // return ip address of mongo replicate server
 	GetReplicatPort() string   // return port of mongo replicate server
 	GetWebDir() string         // return the path to the web app folder
+	GetBatch() int             // return the quantity of transaction in a batch during asynchronous indexation process
+	GetGorout() int            // return a bool defining the number of goroutines allowed simulatneously by context
+	GetAllowAsync() bool       // return a boolean defining if API must index data in elastic search asynchronously
+	GetDebug() bool            // return boolean defining if debug log must be written in info and debug file, false they appear on console
 }

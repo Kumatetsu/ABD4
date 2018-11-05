@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 30th September 2018 4:45:50 pm
+ * Last Modified: Saturday, 3rd November 2018 11:13:28 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -13,7 +13,9 @@
 
 package context
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // CustomHandler used as app Handler struct
 // It embed an AppContext variable
@@ -31,4 +33,11 @@ type HandlerWrapper struct {
 // ServeHTTP call the last registered HandlerWrapper in HandlerWrapper.H property
 func (hw HandlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hw.H(hw.Ctx, w, r)
+}
+
+func (hw HandlerWrapper) Wrap(ctx *AppContext, handler CustomHandler) *HandlerWrapper {
+	return &HandlerWrapper{
+		Ctx: ctx,
+		H:   handler,
+	}
 }
