@@ -12,9 +12,15 @@ if (empty($argv[1]) == true) {
 } else {
     $timer = $argv[1]*1000;
 }
-
-
-while (true) {
+if (empty($argv[2]) == true) {
+    $chronos = 5;
+} else {
+    $chronos = $argv[2];
+}
+$start = microtime(true);
+$iterator = 0;
+$elapsed = 0;
+while ($elapsed < $chronos) {
     // usleep($timer);
     $firstAge = $escapegame->getAge();
     $nbTickets = $escapegame->getNbTickets();
@@ -76,11 +82,19 @@ while (true) {
     curl_setopt_array($ch,$options);
     echo(json_encode($result));
     echo "\n\n";
-
+    $iterator++;
     $response = curl_exec($ch);
     echo "Response: ".$response;
+    echo "\nRequest n°" . $iterator;
     echo "\n\n";
     curl_close($ch);
     echo json_encode($response);
     echo "\n\n";
+    $elapsed = microtime(true) - $start;
+    $now = new DateTime();
+    $last_benchmark = "\n". $now->format("YYYY-mm-dd h:i:s"). " Benchmark: " . $iterator . " requests in ". $elapsed . "seconds.\nEquivalent to ". $iterator / $elapsed . "request/sec";
+    echo $last_benchmark;
 }
+$myfile = fopen("batch_report.txt", "a") or die("Unable to open file!");
+fwrite($myfile, $last_benchmark);
+fclose($myfile);
