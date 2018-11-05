@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Thursday, 1st November 2018 8:57:16 pm
+ * Last Modified: Monday, 5th November 2018 6:14:34 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -69,28 +69,28 @@ func AddTheme(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 }
 
 // Remove a theme by his description
-func RemoveThemeByTheme(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
+func RemoveThemeByName(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	theme, ok := mux.Vars(r)["theme"]
 	if !ok {
-		err := fmt.Errorf("%s no theme parameter in url", utils.Use().GetStack(RemoveThemeByTheme))
+		err := fmt.Errorf("%s no theme parameter in url", utils.Use().GetStack(RemoveThemeByName))
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "parameter is missing", err.Error())
 		return
 	}
 	deleted, err := ctx.ThemeManager.RemoveBy(map[string]string{"Theme": theme})
 	if err != nil {
-		msg := fmt.Sprintf("%s failed to remove %s from %s", utils.Use().GetStack(RemoveThemeByTheme), context.THEMES, ctx.Opts.GetDatabaseType())
+		msg := fmt.Sprintf("%s failed to remove %s from %s", utils.Use().GetStack(RemoveThemeByName), context.THEMES, ctx.Opts.GetDatabaseType())
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
 	if ctx.Opts.GetEmbedES() {
 		err = ctx.RemoveIndex(context.THEMES)
 		if err != nil {
-			msg := fmt.Sprintf("%s failed to remove %s index", utils.Use().GetStack(RemoveThemeByTheme), context.THEMES)
+			msg := fmt.Sprintf("%s failed to remove %s index", utils.Use().GetStack(RemoveThemeByName), context.THEMES)
 			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 			return
 		}
 	}
-	msg := fmt.Sprintf("%s %d %s successfully deleted", utils.Use().GetStack(RemoveThemeByTheme), deleted, context.THEME)
+	msg := fmt.Sprintf("%s %d %s successfully deleted", utils.Use().GetStack(RemoveThemeByName), deleted, context.THEME)
 	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")
 }
 
@@ -98,17 +98,17 @@ func RemoveThemeByTheme(ctx *context.AppContext, w http.ResponseWriter, r *http.
 func RemoveThemeByID(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	theme, ok := mux.Vars(r)["id"]
 	if !ok {
-		err := fmt.Errorf("%s no theme parameter in url", utils.Use().GetStack(RemoveThemeByTheme))
+		err := fmt.Errorf("%s no theme parameter in url", utils.Use().GetStack(RemoveThemeByID))
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "parameter is missing", err.Error())
 		return
 	}
 	deleted, err := ctx.ThemeManager.RemoveBy(map[string]string{"id": theme})
 	if err != nil {
-		msg := fmt.Sprintf("%s failed to remove %s from %s", utils.Use().GetStack(RemoveThemeByTheme), context.THEMES, ctx.Opts.GetDatabaseType())
+		msg := fmt.Sprintf("%s failed to remove %s from %s", utils.Use().GetStack(RemoveThemeByID), context.THEMES, ctx.Opts.GetDatabaseType())
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("%s %d %s successfully deleted", utils.Use().GetStack(RemoveThemeByTheme), deleted, context.THEME)
+	msg := fmt.Sprintf("%s %d %s successfully deleted", utils.Use().GetStack(RemoveThemeByID), deleted, context.THEME)
 	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")
 }
 
