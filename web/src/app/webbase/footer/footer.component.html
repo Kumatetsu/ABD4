@@ -1,36 +1,3 @@
 <footer class="footer-distributed">
-    <div class="footer-left">
-      <span><img src="{{ logo }}" style="max-height:6rem;"/></span>
-      <p class="footer-links">
-        <a *ngFor="let item of menu" routerLink="{{ item.url }}" href="javascript:function disabler() { return false; }">| {{ item.text }} | </a>
-      </p>
-      <p class="footer-company-name">Copyright <i class="fa fa-copyright"></i> {{ company }}</p>
-    </div>
-    <div class="footer-center">
-      <div>
-        <i class="fa fa-map-marker"></i>
-        <p><span>{{ addr }}</span></p>
-      </div>
-      <div>
-        <i class="fa fa-envelope"></i>
-        <p><a href="mailto:{{companymail}}">{{ companymail }}</a></p>
-      </div>
-    </div>
-    <div class="footer-right">
-      <p class="footer-company-about">
-        <span>{{ aboutus }}</span>
-        {{ phrase }}
-      </p>
 
-      <div class="footer-icons">
-
-        <a href="#"><i class="fa fa-facebook"></i></a>
-        <a href="#"><i class="fa fa-twitter"></i></a>
-        <a href="#"><i class="fa fa-linkedin"></i></a>
-        <a href="#"><i class="fa fa-github"></i></a>
-
-      </div>
-
-    </div>
-
-  </footer>
+</footer>

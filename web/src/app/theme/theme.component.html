@@ -1,0 +1,24 @@
+<table class="table table-dark">
+    <thead>
+        <tr>
+        <th scope="col">Thèmes</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let theme of themes">
+        <td>
+            {{ theme.theme }}
+        </td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="input-group mb-3">
+        <input [(ngModel)]="new_description" type="text" class="form-control" placeholder="Nom du thème">
+        <div class="input-group-append">
+          <button (click)="addNewTheme()" class="btn btn-outline-secondary" type="button">Ajouter un thème</button>
+        </div>
+</div>
+
+<p class="text-center" *ngIf="error_msg" style="color: red;"> TOUS LES CHAMPS SONT REQUIS.</p>
+
