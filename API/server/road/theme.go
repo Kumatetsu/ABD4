@@ -5,7 +5,7 @@
  * Author: ayad_y@etna-alternance.net billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Thursday, 1st November 2018 7:24:19 pm
+ * Last Modified: Monday, 5th November 2018 6:13:50 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -64,7 +64,7 @@ func GetThemeRouting() []*Road {
 			Method:          DELETE,
 			Pattern:         "/theme/{theme}",
 			StatusProtected: false,
-			HandlerFunc:     handler.RemoveThemeByTheme,
+			HandlerFunc:     handler.RemoveThemeByName,
 		},
 	}
 }

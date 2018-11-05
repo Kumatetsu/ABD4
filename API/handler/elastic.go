@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Wednesday, 31st October 2018 9:36:25 pm
+ * Last Modified: Monday, 5th November 2018 3:51:26 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -17,10 +17,12 @@ import (
 	"ABD4/API/context"
 	"ABD4/API/elasticsearch"
 	"ABD4/API/iserial"
+	"ABD4/API/service"
 	"ABD4/API/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -71,7 +73,7 @@ func GetRemoveIndexation(ctx *context.AppContext, w http.ResponseWriter, r *http
 			return
 		}
 	}
-	msg := fmt.Sprintf("%s Indexes: %s sucessfully created", utils.Use().GetStack(GetRemoveIndexation), string(indexes))
+	msg := fmt.Sprintf("%s Indexes: %s sucessfully removed", utils.Use().GetStack(GetRemoveIndexation), string(indexes))
 	ctx.Rw.SendString(ctx, w, http.StatusOK, msg, string(indexes), "")
 	return
 }
@@ -184,12 +186,18 @@ func GetIndexData(ctx *context.AppContext, w http.ResponseWriter, r *http.Reques
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
+	ctx.SavedTime = ctx.Time
+	ctx.Time = time.Now()
+	defer func() {
+		ctx.Time = ctx.SavedTime
+	}()
 	err = ctx.IndexArrayData(toSerialize, index, entity)
 	if err != nil {
 		msg := fmt.Sprintf("%s failed to index %s", utils.Use().GetStack(GetIndexData), index)
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
+	service.Benchmark(ctx, fmt.Sprintf("Index array of %d elements", len(toSerialize)))
 	msg := fmt.Sprintf("%s data successfully indexed", utils.Use().GetStack(GetIndexData))
 	ctx.Rw.SendString(ctx, w, http.StatusAccepted, msg, "", "")
 	return

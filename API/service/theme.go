@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Thursday, 1st November 2018 7:18:28 pm
+ * Last Modified: Saturday, 3rd November 2018 3:12:51 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -24,10 +24,9 @@ import (
 )
 
 type themeService struct {
-	t          *model.Theme
-	themes     []*model.Theme
-	TimeFormat string
-	ctx        *context.AppContext
+	t      *model.Theme
+	themes []*model.Theme
+	ctx    *context.AppContext
 }
 
 func Theme(ctx *context.AppContext) *themeService {
@@ -37,10 +36,9 @@ func Theme(ctx *context.AppContext) *themeService {
 		// on pousse le format depuis le model
 		// c'est le model qui dicte sa conduite au service
 		// le model n'a pas connaissance du service
-		TimeFormat: model.TARIF_TIME_FORMAT,
-		t:          t,
-		themes:     themes,
-		ctx:        ctx,
+		t:      t,
+		themes: themes,
+		ctx:    ctx,
 	}
 }
 

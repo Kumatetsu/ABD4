@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 29th October 2018 10:29:23 pm
+ * Last Modified: Monday, 5th November 2018 1:53:52 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -21,6 +21,8 @@ import (
 	"ABD4/API/utils"
 	"fmt"
 	"net/http"
+	"runtime"
+	"time"
 )
 
 // GetTransaction return all transaction in database
@@ -36,7 +38,71 @@ func GetTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 	for _, t := range tx {
 		toSerialize = append(toSerialize, t)
 	}
-	ctx.Rw.SendArraySerializable(ctx, w, http.StatusOK, toSerialize, "", "")
+	msg := fmt.Sprintf("%s %d transactions returned", utils.Use().GetStack(GetTransaction), len(toSerialize))
+	ctx.Rw.SendArraySerializable(ctx, w, http.StatusOK, toSerialize, msg, "")
+}
+
+// synchronousIndexation : elastic search indexation, a non critical operation
+// as far as data are existing in mongo database.
+func synchronousIndexation(ctx *context.AppContext, transaction *model.Transaction) {
+	// on se prépare à benchmarker l'indexation
+	ctx.SavedTime = ctx.Time
+	ctx.Time = time.Now()
+	// on index
+	err := ctx.IndexData(transaction.ToES(), context.TXs, context.TX)
+	if err != nil {
+		msg := fmt.Sprintf("%s failed to index transaction in elasticsearch", utils.Use().GetStack(AddTransaction))
+		ctx.Log.Error.Printf(msg)
+	}
+	ctx.Log.Info.Printf("%s successfull indexation of new %s", utils.Use().GetStack(AddTransaction), context.TX)
+	// on log le temps de l'indexation dans le writer de Benchmark
+	service.Benchmark(ctx, "ElasticSearch indexation")
+	ctx.Time = ctx.SavedTime
+}
+
+// asynchronousIndexation : elastic search indexation with mutex locking on ctx
+// and internal goroutine counter decrementing
+func asynchronousIndexation(ctx *context.AppContext, transaction *model.Transaction) {
+	// code asynchrone, on bloque l'accès à l'espace mémoire de ctx le temps de la requête
+	ctx.Lock()
+	defer ctx.Unlock()
+	defer ctx.RmGorout()
+
+	// on se prépare à benchmarker l'indexation
+	ctx.SavedTime = ctx.Time
+	ctx.Time = time.Now()
+	// on index
+	err := ctx.IndexData(transaction.ToES(), context.TXs, context.TX)
+	if err != nil {
+		msg := fmt.Sprintf("%s failed to index transaction in elasticsearch", utils.Use().GetStack(AddTransaction))
+		ctx.Log.Error.Printf(msg)
+	}
+	ctx.Log.Info.Printf("%s successfull indexation of new %s", utils.Use().GetStack(AddTransaction), context.TX)
+	// on log le temps de l'indexation dans le writer de Benchmark
+	service.Benchmark(ctx, "ElasticSearch indexation")
+	ctx.Time = ctx.SavedTime
+}
+
+func esTransactionIndexation(ctx *context.AppContext, transaction *model.Transaction) {
+	// Si on est pour l'asynchrone
+	if ctx.Opts.GetAllowAsync() {
+		// On autorise le parallélisme sur 2 processeur internes
+		runtime.GOMAXPROCS(2)
+		ctx.AddGorout()
+		// Après avoir incrémenté le compteur interne
+		// on vérifie qu'on est pas au dessus de la limite définie
+		if ctx.GoroutOverflow() {
+			for ctx.GoroutOverflow() {
+				// tant qu'on a trop de goroutines on patiente
+				time.Sleep(time.Millisecond * 50)
+			}
+		}
+		// chaque indexation est effectuée dans une goroutine, ce code n'est pas bloquant
+		// la requête sera considérée valide une fois les data en base.
+		go asynchronousIndexation(ctx, transaction)
+	} else {
+		synchronousIndexation(ctx, transaction)
+	}
 }
 
 // AddTransaction add a transaction
@@ -52,20 +118,18 @@ func AddTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "defining price failed", err.Error())
 		return
 	}
+	ctx.SavedTime = ctx.Time
+	ctx.Time = time.Now()
 	transaction, err = ctx.TransactionManager.Create(transaction)
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "Insert transaction in mongo failed", err.Error())
 		return
 	}
+	service.Benchmark(ctx, "Mongo insert")
+	ctx.Time = ctx.SavedTime
 	// si on utilise elastic search on index la nouvelle transaction
 	if ctx.Opts.GetEmbedES() {
-		err = ctx.IndexData(transaction.ToES(), context.TXs, context.TX)
-		if err != nil {
-			msg := fmt.Sprintf("%s failed to index transaction in elasticsearch", utils.Use().GetStack(AddTransaction))
-			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
-			return
-		}
-		ctx.Log.Info.Printf("%s successfull indexation of new %s", utils.Use().GetStack(AddTransaction), context.TX)
+		esTransactionIndexation(ctx, transaction)
 	}
 	ctx.Rw.SendSerializable(ctx, w, http.StatusCreated, transaction, "", "")
 	return
