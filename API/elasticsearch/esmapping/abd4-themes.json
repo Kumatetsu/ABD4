@@ -4,7 +4,7 @@
         "number_of_replicas": 0
     },
     "mappings" : {
-        "tarif":  {
+        "theme":  {
             "properties": {
                 "id": {
                     "type": "long",
@@ -12,18 +12,7 @@
                         "raw": { "type": "long", "index": "not_analyzed" }
                     }
                 },
-                "TarifType": {
-                    "type":"text",
-                    "fields":{
-                       "raw":{
-                          "type":"keyword"
-                       }
-                    }
-                },
-                "Prix": {
-                    "type":"float"
-                },
-                "Date": {
+                "Theme": {
                     "type":"text",
                     "fields":{
                        "raw":{

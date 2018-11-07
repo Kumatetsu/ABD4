@@ -1,0 +1,37 @@
+{
+    "settings": {
+        "number_of_shards" : 1,
+        "number_of_replicas": 0
+    },
+    "mappings" : {
+        "tarif":  {
+            "properties": {
+                "id": {
+                    "type": "long",
+                    "fields": {
+                        "raw": { "type": "long", "index": "not_analyzed" }
+                    }
+                },
+                "Description": {
+                    "type":"text",
+                    "fields":{
+                       "raw":{
+                          "type":"keyword"
+                       }
+                    }
+                },
+                "Prix": {
+                    "type":"float"
+                },
+                "Date": {
+                    "type":"text",
+                    "fields":{
+                       "raw":{
+                          "type":"keyword"
+                       }
+                    }
+                }
+            }
+        }
+    }
+}

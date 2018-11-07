@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 1:34:22 pm
+ * Last Modified: Monday, 5th November 2018 12:18:11 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -58,7 +58,12 @@ func (a *App) Initialize(opts *server.Option) error {
 		// Cleanup des data si on veut...
 		// defer a.Ctx.TransactionManager.RemoveAll()
 		// defer a.Ctx.UserManager.RemoveAll()
-		defer a.Ctx.Mongo.Close()
+		safeMongoClose := func() {
+			if a.Ctx.Mongo != nil {
+				a.Ctx.Mongo.Close()
+			}
+		}
+		defer safeMongoClose()
 	}
 	router := server.Routing(a.Ctx)
 	http.Handle("/", router)

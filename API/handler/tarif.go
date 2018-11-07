@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 1:27:26 am
+ * Last Modified: Friday, 2nd November 2018 7:53:28 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -25,12 +25,12 @@ import (
 )
 
 // GetTarifs return all tarif in database
-func GetTarifs(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
+func GetTarif(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	var toSerialize []iserial.Serializable
-	ctx.Log.Info.Printf("%s %s ", utils.Use().GetStack(GetTarifs), "Getting Tarifs")
+	ctx.Log.Info.Printf("%s %s ", utils.Use().GetStack(GetTarif), "Getting Tarifs")
 	tx, err := ctx.TarifManager.FindAll()
 	if err != nil {
-		msg := fmt.Sprintf("%s FindAll failed", utils.Use().GetStack(GetTarifs))
+		msg := fmt.Sprintf("%s FindAll failed", utils.Use().GetStack(GetTarif))
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
 		return
 	}
@@ -52,6 +52,16 @@ func AddTarif(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusBadRequest, "Insert tarif in mongo failed", err.Error())
 		return
+	}
+	// si on utilise elastic search on index le nouveau tarif
+	if ctx.Opts.GetEmbedES() {
+		err = ctx.IndexData(tarif.ToES(), context.TARIFS, context.TARIF)
+		if err != nil {
+			msg := fmt.Sprintf("%s failed to index tarif in elasticsearch", utils.Use().GetStack(AddTarif))
+			ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, msg, err.Error())
+			return
+		}
+		ctx.Log.Info.Printf("%s successfull indexation of new %s", utils.Use().GetStack(AddTarif), context.TARIF)
 	}
 	ctx.Rw.SendSerializable(ctx, w, http.StatusCreated, tarif, "", "")
 	return

@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 29th October 2018 5:30:40 pm
+ * Last Modified: Monday, 5th November 2018 4:38:45 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -14,19 +14,17 @@
 package context
 
 import (
-	boltM "ABD4/API/database/boltdatabase/manager"
-	"ABD4/API/database/mongo"
-	mongoM "ABD4/API/database/mongo/manager"
-	"ABD4/API/elasticsearch"
-	"ABD4/API/iserial"
 	"ABD4/API/logger"
 	"ABD4/API/utils"
-	goctx "context"
-	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
+
+	"gopkg.in/mgo.v2"
+	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 var (
@@ -34,148 +32,88 @@ var (
 	MONGO   = "mongo"
 	BOLT    = "bolt"
 	USER    = "user"
-	USERS   = "users"
+	USERS   = PROJECT + "-" + "users"
 	TX      = "transaction"
-	TXs     = "transactions"
+	TXs     = PROJECT + "-" + "transactions"
 	TARIF   = "tarif"
-	TARIFS  = "tarifs"
+	TARIFS  = PROJECT + "-" + "tarifs"
+	THEME   = "theme"
+	THEMES  = PROJECT + "-" + "themes"
 	SECRET  = "==+VDMEG@ABD4"
-	INDEXES = map[string]string{USER: USERS, TX: TXs}
+	INDEXES = map[string]string{USER: USERS, TX: TXs, TARIF: TARIFS, THEME: THEMES}
 )
+
+// AppContext define globals tools and variable usefull in the API
+// It embed the dao's objects (XxxManager *manager.XxxManager),
+// a ResponseWriter which offer shorthand to send uniformised Response
+type AppContext struct {
+	Rw                 IResponseWriter
+	SessionUser        ISessionUser
+	Opts               IServerOption
+	UserManager        IUserManager
+	TransactionManager ITransactionManager
+	TarifManager       ITarifManager
+	ThemeManager       IThemeManager
+	Mongo              *mgo.Session
+	ElasticClient      *elastic.Client
+	Log                *logger.AppLogger
+	Time               time.Time
+	SavedTime          time.Time
+	time               time.Time
+	Exe                string
+	Logpath            string
+	logpath            map[string]string
+	DataPath           string
+	mutex              *sync.Mutex
+	gorout             int
+}
 
 // logState log final parameters at the launch of API
 func (ctx *AppContext) logState() {
-	ctx.Log.Info.Printf("%s RootDir: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Exe)
-	ctx.Log.Info.Printf("%s LogPath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Logpath)
-	ctx.Log.Info.Printf("%s Database asked: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatabaseType())
-	if ctx.Opts.GetDatabaseType() == "mongo" {
-		ctx.Log.Info.Printf("%s Mongo server address: %s:%s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetMongoIP(), ctx.Opts.GetMongoPort())
-	} else {
-		ctx.Log.Info.Printf("%s Bolt datapath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatapath())
-	}
+	ctx.Log.Info.Printf("%s %s SERVER PARAMETERS:", utils.Use().GetStack(ctx.Instanciate), PROJECT)
 	ctx.Log.Info.Printf("%s IP: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetIP())
 	ctx.Log.Info.Printf("%s Port: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetPort())
 	ctx.Log.Info.Printf("%s Address: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetAddress())
-}
-
-// setDao define database access relying on GetDatabaseType return
-// accept mongo or bolt database
-func (ctx *AppContext) setDAO(kind string) error {
-	switch kind {
-	case MONGO:
-		mongoAddr := ctx.Opts.GetMongoIP() + ":" + ctx.Opts.GetMongoPort()
-		mongo, err := mongo.GetMongo(mongoAddr)
-		if err != nil {
-			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+	ctx.Log.Info.Printf("%s %s FILE SYSTEM:", utils.Use().GetStack(ctx.Instanciate), PROJECT)
+	ctx.Log.Info.Printf("%s RootDir: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Exe)
+	ctx.Log.Info.Printf("%s LogPaths: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Logpath)
+	ctx.Log.Info.Printf("%s\t info: %s", utils.Use().GetStack(ctx.Instanciate), ctx.logpath["info"])
+	ctx.Log.Info.Printf("%s\t debug: %s", utils.Use().GetStack(ctx.Instanciate), ctx.logpath["debug"])
+	ctx.Log.Info.Printf("%s\t error: %s", utils.Use().GetStack(ctx.Instanciate), ctx.logpath["error"])
+	ctx.Log.Info.Printf("%s\t benchmark: %s", utils.Use().GetStack(ctx.Instanciate), ctx.logpath["benchmark"])
+	ctx.Log.Info.Printf("%s %s DATABASE CONTEXT:", utils.Use().GetStack(ctx.Instanciate), PROJECT)
+	ctx.Log.Info.Printf("%s Database asked: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatabaseType())
+	if ctx.Opts.GetDatabaseType() == "mongo" {
+		ctx.Log.Info.Printf("%s Mongo server address: %s:%s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetMongoIP(), ctx.Opts.GetMongoPort())
+		if ctx.Opts.GetMongoReplicatSet() {
+			ctx.Log.Info.Printf("%s Mongo replica address: %s:%s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetReplicatIP(), ctx.Opts.GetReplicatPort())
 		}
-		ctx.UserManager = &mongoM.UserManager{}
-		err = ctx.UserManager.Init(map[string]string{
-			"dbName": PROJECT,
-			"entity": USER,
-		})
-		err = ctx.UserManager.SetDB(mongo)
-		if err != nil {
-			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+	} else {
+		ctx.Log.Info.Printf("%s Bolt datapath: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetDatapath())
+	}
+	if ctx.Opts.GetEmbedES() {
+		ctx.Log.Info.Printf("%s %s ELASTICSEARCH CONTEXT:", utils.Use().GetStack(ctx.Instanciate), PROJECT)
+		ctx.Log.Info.Printf("%s ElasticSearch server address: %s", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetEs())
+		if ctx.Opts.GetAllowAsync() {
+			ctx.Log.Info.Printf("%s %s API allow asynchronous indexation on this instance", utils.Use().GetStack(ctx.Instanciate), PROJECT)
+			ctx.Log.Info.Printf("%s %s API allow %d simultaneous goroutines used by server context", utils.Use().GetStack(ctx.Instanciate), PROJECT, ctx.Opts.GetGorout())
+			ctx.Log.Info.Printf("%s asynchronous indexation expected batch size: %d", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetBatch())
+			ctx.Log.Info.Printf("%s maximum simultaneous pools of batch is hardcoded to 200", utils.Use().GetStack(ctx.Instanciate))
 		}
-		ctx.TransactionManager = &mongoM.TransactionManager{}
-		err = ctx.TransactionManager.Init(map[string]string{
-			"dbName": PROJECT,
-			"entity": TXs,
-		})
-		err = ctx.TransactionManager.SetDB(mongo)
-		if err != nil {
-			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
+		if ctx.Opts.GetIndex() {
+			ctx.Log.Info.Printf("%s You are asking a creation of all indexes in esmapping folder", utils.Use().GetStack(ctx.Instanciate))
 		}
-		ctx.TarifManager = &mongoM.TarifManager{}
-		err = ctx.TarifManager.Init(map[string]string{
-			"dbName": PROJECT,
-			"entity": TARIFS,
-		})
-		err = ctx.TarifManager.SetDB(mongo)
-		if err != nil {
-			return fmt.Errorf("%s %s", utils.Use().GetStack(ctx.setDAO), err.Error())
-		}
-	case BOLT:
-		userManager := &boltM.UserManager{}
-		userManager.Init(map[string]string{
-			"name":     PROJECT,
-			"fullpath": ctx.DataPath,
-			"secret":   SECRET,
-		})
-		ctx.UserManager = userManager
-	}
-	return nil
-}
-
-// indexData take data actually in database and send it to elastic correspondant index
-// there is nothing to prevent the reindexation of data
-// its easy to fix a bad indexation using rmindex/index/reindex options
-func (ctx *AppContext) indexData() error {
-	if ctx.UserManager.GetDBName() == "" || ctx.TransactionManager.GetDBName() == "" {
-		return fmt.Errorf("%s At list one data manager is missing", utils.Use().GetStack(ctx.indexData))
-	}
-	users, err := ctx.UserManager.FindAll()
-	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-	}
-	var serialUsers []iserial.Serializable
-	for _, u := range users {
-		serialUsers = append(serialUsers, u.ToES())
-	}
-	err = ctx.IndexArrayData(serialUsers, USERS, USER)
-	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-	}
-	tx, err := ctx.TransactionManager.FindAll()
-	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-	}
-	var serialTx []iserial.Serializable
-	for _, transaction := range tx {
-		serialTx = append(serialTx, transaction.ToES())
-	}
-	err = ctx.IndexArrayData(serialTx, TXs, TX)
-	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-	}
-	return nil
-}
-
-// embedElasticSearch is the entry point to settle an elasticsearch context linked with this api
-// User and Transaction entities are indexed
-// This can be deactivated using flag embedES=false
-func (ctx *AppContext) embedElasticSearch() {
-	var err error
-
-	ctx.ElasticClient, err = elasticsearch.Instanciate(ctx.Opts.GetEs())
-	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-	}
-	// if flag rmindex is passed to .exe, indexes 'users' and 'transactions' are removed
-	if ctx.Opts.GetRmindex() {
-		err = elasticsearch.RemoveIndex(ctx.ElasticClient, USERS)
-		if err != nil {
-			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-		}
-		err = elasticsearch.RemoveIndex(ctx.ElasticClient, TXs)
-		if err != nil {
-			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
-		}
-	}
-	// if index or reindex flag is present
-	// index create indexes if don't exist
-	// reindex remove and create indexes
-	// if reindex, data are pulled from database and send to elasticsearch
-	// there is nothing to prevent duplicate in elastic
-	if ctx.Opts.GetIndex() || ctx.Opts.GetReindex() {
-		err = elasticsearch.CreateIndexation(ctx.ElasticClient, ctx.Opts.GetReindex())
-		if err != nil {
-			ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+		if ctx.Opts.GetRmindex() {
+			ctx.Log.Info.Printf("%s You are asking the deletion of all indexes in esmapping folder", utils.Use().GetStack(ctx.Instanciate))
 		}
 		if ctx.Opts.GetReindex() {
-			err = ctx.indexData()
-			if err != nil {
-				ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+			ctx.Log.Info.Printf("%s You are asking the deletion and creation of all indexes in esmapping folder", utils.Use().GetStack(ctx.Instanciate))
+			if ctx.Opts.GetAllowAsync() {
+				ctx.Log.Info.Printf("%s data will be pushed asynchronously by batch of %d in a limit of 200 pools", utils.Use().GetStack(ctx.Instanciate), ctx.Opts.GetBatch())
+
+			} else {
+				ctx.Log.Info.Printf("%s data will be pushed synchronously, elasticsearch indexation is 100x slower", utils.Use().GetStack(ctx.Instanciate))
+
 			}
 		}
 	}
@@ -199,6 +137,35 @@ func (ctx *AppContext) embedElasticSearch() {
 // - ISessionUser: On the User model entity
 // - IServerOption: On the structure embedding configuration from flags and harcoded values
 func (ctx *AppContext) Instanciate(opts IServerOption) *AppContext {
+	ctx.mutex = &sync.Mutex{}
+	// create required folders and files
+	ctx.createFileSystem(opts)
+	// define output streams for logger
+	info, errorLog, debug, benchmark := ctx.defineLogSystem(opts)
+	// instanciate the ctx to return
+	ctx.Opts = opts
+	//SessionUser: &model.User{},
+	ctx.Log = logger.Instanciate(debug, info, errorLog, benchmark)
+	ctx.Exe = opts.GetExeFolder()
+	ctx.Logpath = opts.GetLogpath()
+	ctx.DataPath = opts.GetDatapath()
+
+	// define dao access (database/manager package)
+	err := ctx.setDAO(opts.GetDatabaseType())
+	if err != nil {
+		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	}
+
+	//Define elastic serv and index if needed
+	if opts.GetEmbedES() {
+		ctx.embedElasticSearch()
+	}
+	ctx.logState()
+	return ctx
+}
+
+// createFileSystem critical function called before any instanciation
+func (ctx *AppContext) createFileSystem(opts IServerOption) {
 	if opts.GetExeFolder() == "" {
 		log.Fatalf("No exe folder defined, %s unable to provide defaults values", PROJECT)
 	}
@@ -218,72 +185,66 @@ func (ctx *AppContext) Instanciate(opts IServerOption) *AppContext {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// open a file for log, for now, just one file is defined
-	// but we can move it easy to three log files (debug, info, error)
-	// for now, debug mode is useless
-	logFile, err := os.OpenFile(
-		filepath.Join(opts.GetLogpath(), PROJECT+".log"),
+	err = os.MkdirAll(filepath.Join(opts.GetExeFolder(), "benchmark"), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// defineLogSystem critical function called before any instanciation
+// info, err, debug, benchmark
+func (ctx *AppContext) defineLogSystem(opts IServerOption) (io.Writer, io.Writer, io.Writer, io.Writer) {
+	// open files for log and benchmarking
+	ctx.logpath = make(map[string]string)
+	ctx.logpath["info"] = PROJECT + "_info.log"
+	ctx.logpath["debug"] = PROJECT + "_debug.log"
+	ctx.logpath["error"] = PROJECT + "_error.log"
+	ctx.logpath["benchmark"] = PROJECT + "_benchmark.log"
+	infoFile, err := os.OpenFile(
+		filepath.Join(opts.GetLogpath(), ctx.logpath["info"]),
+		os.O_RDWR|os.O_CREATE|os.O_APPEND,
+		0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	debugFile, err := os.OpenFile(
+		filepath.Join(opts.GetLogpath(), ctx.logpath["debug"]),
+		os.O_RDWR|os.O_CREATE|os.O_APPEND,
+		0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	errorFile, err := os.OpenFile(
+		filepath.Join(opts.GetLogpath(), ctx.logpath["error"]),
+		os.O_RDWR|os.O_CREATE|os.O_APPEND,
+		0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	benchmarkFile, err := os.OpenFile(
+		filepath.Join(opts.GetExeFolder(), "benchmark", ctx.logpath["benchmark"]),
 		os.O_RDWR|os.O_CREATE|os.O_APPEND,
 		0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
 	// we define an output able to log on file and standart output
-	output := io.MultiWriter(logFile, os.Stdout)
-	loggers := logger.Instanciate(output, output, output)
-	// instanciate the ctx to return
-	ctx.Opts = opts
-	//SessionUser: &model.User{},
-	ctx.Log = loggers
-	ctx.Exe = opts.GetExeFolder()
-	ctx.Logpath = opts.GetLogpath()
-	ctx.DataPath = opts.GetDatapath()
-
-	// define dao access (database/manager package)
-	err = ctx.setDAO(opts.GetDatabaseType())
-	if err != nil {
-		ctx.Log.Error.Fatalf("%s %s", utils.Use().GetStack(ctx.Instanciate), err.Error())
+	info := io.MultiWriter(infoFile, os.Stdout)
+	errOut := io.MultiWriter(errorFile, infoFile, os.Stdout)
+	debug := io.MultiWriter(os.Stdout)
+	if opts.GetDebug() {
+		debug = io.MultiWriter(debugFile, infoFile, os.Stdout)
 	}
-
-	//Define elastic serv and index if needed
-	if opts.GetEmbedES() {
-		ctx.embedElasticSearch()
-	}
-	ctx.logState()
-	return ctx
+	benchmark := io.MultiWriter(benchmarkFile, os.Stdout)
+	return info, errOut, debug, benchmark
 }
 
-// IndexData send a iserial.Serializable entity to elasticsearch
-// index and t are elasticsearch target index and entity type:
-// 'transactions' and 'transaction' for exemple
-func (ctx *AppContext) IndexData(i iserial.Serializable, index, t string) error {
-	op, err := ctx.ElasticClient.Index().
-		Index(index).
-		Type(t).
-		BodyJson(i).
-		Refresh("true").
-		Do(goctx.Background())
-	if err != nil {
-		ctx.Log.Error.Printf("%s %s", utils.Use().GetStack(ctx.IndexData), err.Error())
-		return err
-	}
-	ctx.Log.Info.Printf("%s insert unit %s to index %s, entity type: %s", utils.Use().GetStack(ctx.IndexData), op.Id, op.Index, op.Type)
-	return nil
+func (ctx *AppContext) benchmarkStart() {
+	ctx.time = time.Now()
 }
 
-// IndexArrayData, call IndexData on an array of iserial.Serializable
-func (ctx *AppContext) IndexArrayData(serializables []iserial.Serializable, index, t string) error {
-	var err error
-	for _, i := range serializables {
-		err = ctx.IndexData(i, index, t)
-		if err != nil {
-			break
-		}
-	}
-	return err
-}
-
-// RemoveIndex destroy completely an index
-func (ctx *AppContext) RemoveIndex(index string) error {
-	return elasticsearch.RemoveIndex(ctx.ElasticClient, index)
+func (ctx *AppContext) benchmarkStop(target string) {
+	now := time.Now()
+	diff := now.Sub(ctx.Time)
+	ctx.Log.Benchmark.Printf("Target: %s in %s", target, diff.String())
 }

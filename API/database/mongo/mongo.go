@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 14th October 2018 3:46:25 pm
+ * Last Modified: Monday, 5th November 2018 6:27:51 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -18,6 +18,10 @@ import (
 	"fmt"
 
 	mgo "gopkg.in/mgo.v2"
+)
+
+const (
+	ReplicaSetName = "abd4"
 )
 
 func GetMongo(serverAddr string) (*mgo.Session, error) {
@@ -37,6 +41,22 @@ func GetMongo(serverAddr string) (*mgo.Session, error) {
 		distributing reads across multiple slaves and writes across multiple connections to the master,
 		but consistency isn't guaranteed.
 	*/
+	session.SetMode(mgo.Monotonic, true)
+	return session, nil
+}
+
+func GetMongoReplicatSet(hosts []string, database string) (*mgo.Session, error) {
+	session, err := mgo.DialWithInfo(&mgo.DialInfo{
+		Addrs:          hosts,
+		ReplicaSetName: ReplicaSetName,
+		FailFast:       true,
+	})
+	if err != nil {
+		session, err = mgo.Dial(hosts[0] + "," + hosts[1])
+		if err != nil {
+			return nil, fmt.Errorf("%s mgo.DialWithInfo: %s", utils.Use().GetStack(GetMongo), err.Error())
+		}
+	}
 	session.SetMode(mgo.Monotonic, true)
 	return session, nil
 }

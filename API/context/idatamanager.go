@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 29th October 2018 10:41:30 pm
+ * Last Modified: Tuesday, 30th October 2018 9:14:18 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -66,4 +66,16 @@ type ITarifManager interface {
 	RemoveBy(map[string]string) (int, error)
 	RemoveAll() (int, error)
 	Create(tx *model.Tarif) (*model.Tarif, error)
+}
+
+// IThemeManager define what is needed to access
+// tarif data whatever database is used
+type IThemeManager interface {
+	IDataManager
+	FindAll() ([]*model.Theme, error)
+	FindBy(map[string]string) ([]*model.Theme, error)
+	FindOneBy(map[string]string) (*model.Theme, error)
+	RemoveBy(map[string]string) (int, error)
+	RemoveAll() (int, error)
+	Create(*model.Theme) (*model.Theme, error)
 }

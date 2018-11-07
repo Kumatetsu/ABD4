@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 1:03:56 am
+ * Last Modified: Sunday, 4th November 2018 8:54:12 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -52,6 +52,12 @@ func main() {
 	var mongoIP = flag.String("mip", "127.0.0.1", "define the mongo server ip")
 	var mongoPort = flag.Int("mp", 27017, "define the mongo server ip")
 	var webdir = flag.String("www", "/web/dist/homesite", "define the path to the index.html")
+	var replicatSet = flag.Bool("replicat", false, "active mongo replicat set")
+	var replicatIP = flag.String("rIp", "", "define ip for mon replicat set")
+	var replicatPort = flag.Int("rp", 27017, "define port for mon replicat set")
+	var batch = flag.Int("batch", 100, "define quantity of transaction by batch in asynchronous idexation process")
+	var allowAsync = flag.Bool("async", false, "define if API will index data asynchronously, request will be faster but indexation error will not appear in response")
+	var gorout = flag.Int("gorout", 15000, "define the maximum num of simultaneous goroutine used by the API context")
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -59,23 +65,30 @@ func main() {
 	flag.Parse()
 	portStr := strconv.Itoa(*port)
 	mongoPortStr := strconv.Itoa(*mongoPort)
+	replicatPortStr := strconv.Itoa(*replicatPort)
 	opts := &server.Option{}
 	opts.Hydrate(
-		*env,          // server environnement
-		dir,           // exe folder absolute path
-		*ip,           // server ip
-		portStr,       // server port
-		*logpath,      // log folder path from dir
-		*databasetype, // kind of database defined (mongo or bolt)
-		*mongoIP,      // mongo server instance address
-		mongoPortStr,  // mongo server instane port
-		*datapath,     // for bolt database, this is the path for .dat files from dir
-		*es,           // elasticsearch server instance address
-		*webdir,       // path to index.html
-		*embedES,      // if true we set elastic search, this is default, set to false to deactivate elastic search
-		*index,        // true: users and transactions index will be set in elasticsearch
-		*reindex,      // true: indexes are removed and create, data are pushed in elastic search
-		*rmindex,      // true: destroy indexes
-		*debug)        // useles, suppose to define a debug mode
+		*env,            // server environnement
+		dir,             // exe folder absolute path
+		*ip,             // server ip
+		portStr,         // server port
+		*logpath,        // log folder path from dir
+		*databasetype,   // kind of database defined (mongo or bolt)
+		*mongoIP,        // mongo server instance address
+		mongoPortStr,    // mongo server instane port
+		*replicatIP,     // if using -replicat option at true, define replicat set ip
+		replicatPortStr, // if usinf -replicat option at true, define replicat set port
+		*datapath,       // for bolt database, this is the path for .dat files from dir
+		*es,             // elasticsearch server instance address
+		*webdir,         // path to index.html
+		*batch,          // number of entity by batch in an asynchronous full data indexation
+		*gorout,         // maximum of simultaneous goroutines in context
+		*replicatSet,    // true: define mongo connection throught replicat set, require to set -rIp
+		*embedES,        // if true we set elastic search, this is default, set to false to deactivate elastic search
+		*index,          // true: users and transactions index will be set in elasticsearch
+		*reindex,        // true: indexes are removed and create, data are pushed in elastic search
+		*rmindex,        // true: destroy indexes
+		*debug,
+		*allowAsync) // useles, suppose to define a debug mode
 	launchApp(opts)
 }

@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 23rd October 2018 5:48:06 pm
+ * Last Modified: Thursday, 1st November 2018 7:49:04 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -25,10 +25,11 @@ import (
 
 // Game is composed:
 type Game struct {
-	Nom     string `json:"Nom"`
-	Jour    string `json:"Jour"`
-	Horaire string `json:"Horaire"`
-	VR      string `json:"VR"`
+	Nom     string   `json:"Nom"`
+	Jour    string   `json:"Jour"`
+	Horaire string   `json:"Horaire"`
+	VR      string   `json:"VR"`
+	Themes  []string `json:"Themes"`
 	mapped  map[string]interface{}
 }
 

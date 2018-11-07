@@ -55,6 +55,14 @@
                         }
                      }
                   },
+                  "themes":{
+                     "type":"text",
+                     "fields":{
+                        "raw":{
+                           "type":"keyword"
+                        }
+                     }
+                  },
                   "jour":{
                      "type":"text",
                      "fields":{
@@ -81,10 +89,18 @@
                   }
                }
             },
+            "themes": {
+                "type": "text",
+                "fields":{
+                    "raw":{
+                       "type":"keyword"
+                    }
+                }
+            },
             "reservation":{
-               "type":"nested",
                "properties":{
                   "spectateur":{
+                    "type":"nested",
                      "properties":{
                         "civilite":{
                            "type":"text",

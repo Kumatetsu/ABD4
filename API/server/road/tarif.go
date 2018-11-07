@@ -5,7 +5,7 @@
  * Author: ayad_y@etna-alternance.net billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Monday, 29th October 2018 11:51:25 pm
+ * Last Modified: Friday, 2nd November 2018 7:52:57 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -22,7 +22,7 @@ func GetTarifRouting() []*Road {
 			Method:          GET,
 			Pattern:         "",
 			StatusProtected: false,
-			HandlerFunc:     handler.GetTarifs,
+			HandlerFunc:     handler.GetTarif,
 		},
 		{
 			Name:            GET + " /tarif/loadfile",

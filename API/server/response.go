@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Sunday, 28th October 2018 2:13:34 pm
+ * Last Modified: Saturday, 3rd November 2018 11:55:02 pm
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -16,6 +16,7 @@ package server
 import (
 	"ABD4/API/context"
 	"ABD4/API/iserial"
+	"ABD4/API/service"
 	"ABD4/API/utils"
 	"encoding/json"
 	"fmt"
@@ -123,6 +124,7 @@ func (r Response) SendItSelf(ctx *context.AppContext, w http.ResponseWriter) {
 		return
 	}
 	ctx.Log.Info.Print(string(ret))
+	service.Benchmark(ctx, "full request")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(r.Status)
 	w.Write(ret)
@@ -138,6 +140,7 @@ func (ar ArrayResponse) sendItSelf(ctx *context.AppContext, w http.ResponseWrite
 		return
 	}
 	ctx.Log.Info.Print(string(ret))
+	service.Benchmark(ctx, "full request")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(ar.Status)
 	w.Write(ret)
@@ -153,6 +156,7 @@ func (sr StringResponse) sendItSelf(ctx *context.AppContext, w http.ResponseWrit
 		return
 	}
 	ctx.Log.Info.Print(string(ret))
+	service.Benchmark(ctx, "full request")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(sr.Status)
 	w.Write(ret)

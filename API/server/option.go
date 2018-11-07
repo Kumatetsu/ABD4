@@ -5,7 +5,7 @@
  * Author: ayad_y billaud_j castel_a masera_m
  * Contact: (ayad_y@etna-alternance.net billaud_j@etna-alternance.net castel_a@etna-alternance.net masera_m@etna-alternance.net)
  * -----
- * Last Modified: Tuesday, 30th October 2018 1:01:49 am
+ * Last Modified: Monday, 5th November 2018 12:15:07 am
  * Modified By: Aurélien Castellarnau
  * -----
  * Copyright © 2018 - 2018 ayad_y billaud_j castel_a masera_m, ETNA - VDM EscapeGame API
@@ -16,23 +16,29 @@ package server
 import "path/filepath"
 
 type Option struct {
-	env       string
-	exe       string
-	ip        string
-	port      string
-	address   string
-	logpath   string
-	dbType    string
-	mongoIP   string
-	mongoPort string
-	datapath  string
-	es        string
-	webdir    string
-	embedES   bool
-	index     bool
-	reindex   bool
-	rmindex   bool
-	debug     bool
+	env          string
+	exe          string
+	ip           string
+	port         string
+	address      string
+	logpath      string
+	dbType       string
+	mongoIP      string
+	mongoPort    string
+	replicatIP   string
+	replicatPort string
+	datapath     string
+	es           string
+	webdir       string
+	batch        int
+	gorout       int
+	replicatSet  bool
+	embedES      bool
+	index        bool
+	reindex      bool
+	rmindex      bool
+	debug        bool
+	allowAsync   bool
 }
 
 var (
@@ -41,23 +47,51 @@ var (
 	TEST = "test"
 )
 
-func (o *Option) Hydrate(env, dir, ip, port, logpath, dbType, mongoIP, mongoPort, datapath, es, webdir string, embedES, index, reindex, rmindex, debug bool) {
-	o.exe = dir
+func (o *Option) Hydrate(
+	env,
+	dir,
+	ip,
+	port,
+	logpath,
+	dbType,
+	mongoIP,
+	mongoPort,
+	replicatIP,
+	replicatPort,
+	datapath,
+	es,
+	webdir string,
+	batch,
+	gorout int,
+	replicaSet,
+	embedES,
+	index,
+	reindex,
+	rmindex,
+	debug,
+	allowAsync bool) {
 	o.env = env
-	o.embedES = embedES
-	o.port = port
+	o.exe = dir
 	o.ip = ip
-	o.datapath = datapath
-	o.dbType = dbType
+	o.port = port
 	o.logpath = logpath
+	o.dbType = dbType
+	o.mongoIP = mongoIP
+	o.mongoPort = mongoPort
+	o.replicatSet = replicaSet
+	o.replicatIP = replicatIP
+	o.replicatPort = replicatPort
+	o.embedES = embedES
+	o.datapath = datapath
 	o.es = es
 	o.webdir = webdir
+	o.batch = batch
+	o.gorout = gorout
 	o.debug = debug
 	o.index = index
 	o.reindex = reindex
 	o.rmindex = rmindex
-	o.mongoIP = mongoIP
-	o.mongoPort = mongoPort
+	o.allowAsync = allowAsync
 }
 
 // GetAddress concat ip and port and affect to address if needed
@@ -67,6 +101,11 @@ func (o *Option) GetAddress() string {
 		o.address = o.ip + ":" + o.port
 	}
 	return o.address
+}
+
+// GetDebug return debug mode boolean
+func (o *Option) GetDebug() bool {
+	return o.debug
 }
 
 /*
@@ -160,6 +199,30 @@ func (o *Option) GetMongoPort() string {
 
 func (o *Option) GetWebDir() string {
 	return filepath.Join(o.exe, o.webdir)
+}
+
+func (o *Option) GetMongoReplicatSet() bool {
+	return o.replicatSet
+}
+
+func (o *Option) GetReplicatIP() string {
+	return o.replicatIP
+}
+
+func (o *Option) GetReplicatPort() string {
+	return o.replicatPort
+}
+
+func (o *Option) GetBatch() int {
+	return o.batch
+}
+
+func (o *Option) GetAllowAsync() bool {
+	return o.allowAsync
+}
+
+func (o *Option) GetGorout() int {
+	return o.gorout
 }
 
 func (o *Option) SetMongoPort(port string) {

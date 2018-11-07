@@ -20,25 +20,24 @@ func TestJson() {
 		"\n==============================================================\n\n\n"))
 }
 
-
 func TestJsonAcheteur() {
 	fmt.Println("=====UnseriaLize bytes into acheteur=====")
 	byt := []byte(`{"Civilite":"Monsieur","Nom":"Carmine","Prenom":"Art","Age":64,"Email":"carmine.art@gogole.com"}`)
 	acheteur := &model.Acheteur{}
 
-	if err := json.Unmarshal(byt, acheteur ); err != nil {
+	if err := json.Unmarshal(byt, acheteur); err != nil {
 		panic(err)
 	}
 	fmt.Println(acheteur.ToString())
 	marshallAcheteur, _ := acheteur.Marshal()
 
-	if bytes.Equal(byt,marshallAcheteur) {
+	if bytes.Equal(byt, marshallAcheteur) {
 		fmt.Printf("marshal Acheteur done\n")
 	}
 
 	acheteur2 := &model.Acheteur{}
 
-	if err := json.Unmarshal(marshallAcheteur, acheteur2 ); err != nil {
+	if err := json.Unmarshal(marshallAcheteur, acheteur2); err != nil {
 		panic(err)
 	}
 
@@ -53,19 +52,19 @@ func TestJsonGame() {
 	fmt.Println("=====UnseriaLize bytes into game=====")
 	byt2 := []byte(`{"Nom":"Interminable attente chez le medecin","Jour":"2018-09-07","Horaire":"05:30","VR":"Non"}`)
 	game := &model.Game{}
-	if err := json.Unmarshal(byt2, game ); err != nil {
+	if err := json.Unmarshal(byt2, game); err != nil {
 		panic(err)
 	}
 
 	fmt.Println(game.ToString())
 	marshallGame, _ := game.Marshal()
 
-	if bytes.Equal(byt2,marshallGame) {
+	if bytes.Equal(byt2, marshallGame) {
 		fmt.Printf("marshal Game done\n")
 	}
 
 	game2 := &model.Game{}
-	if err := json.Unmarshal(marshallGame, game2 ); err != nil {
+	if err := json.Unmarshal(marshallGame, game2); err != nil {
 		panic(err)
 	}
 
@@ -86,7 +85,7 @@ func TestJsonReservation() {
 	fmt.Println(reservation.ToString())
 
 	marshallReservation, _ := reservation.Marshal()
-	if bytes.Equal(byt3,marshallReservation) {
+	if bytes.Equal(byt3, marshallReservation) {
 		fmt.Printf("marshal Reservation done\n")
 	}
 
@@ -111,7 +110,7 @@ func TestJsonTransaction() {
 	}
 	fmt.Println(transaction.ToString())
 
-	marshallTransaction, _ := transaction.Marshal()
+	marshallTransaction, _ := transaction.MarshalJSON()
 	if bytes.Equal(byt4, marshallTransaction) {
 		fmt.Printf("marshal Transaction done\n")
 	}
