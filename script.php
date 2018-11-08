@@ -36,7 +36,6 @@ while ($elapsed < $chronos) {
     $result['Acheteur']['Age'] = $firstAge;
     $result['Acheteur']['Email'] = strtolower($firstEmail);
     $result['Game']['Nom'] = $escapegame->getEscapeGameName();
-    $result['Game']['Themes'] = $escapegame->getEscapeGameThemes();
     $result['Game']['Jour'] = $escapegame->getReservationDate();
     $result['Game']['Horaire'] = $escapegame->getReservationHour();
     $result['Game']['VR'] = $escapegame->useVirtualReality();

@@ -109,6 +109,7 @@ func esTransactionIndexation(ctx *context.AppContext, transaction *model.Transac
 func AddTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Request) {
 	transaction := &model.Transaction{}
 	err := transaction.UnmarshalFromRequest(r)
+	service.Theme(ctx).DefineTheme(transaction)
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "Decode request data failed", err.Error())
 		return

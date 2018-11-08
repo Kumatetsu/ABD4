@@ -29,6 +29,19 @@ type themeService struct {
 	ctx    *context.AppContext
 }
 
+var themeByGame = map[string][]string{
+	"Impot sur le revenu":                  []string{"Braquage", "Stress"},
+	"Greve de la SNCF":                     []string{"Rapidité", "Mythologique"},
+	"Interminable attente chez le medecin": []string{"Stratégie", "Psychologique"},
+	"Soutenance finale":                    []string{"Stress", "Rapidité"},
+	"Mon compte en banque en fin du mois":  []string{"Mythologique", "Braquage"},
+	"Mariage sans alcool":                  []string{"Santé", "Amour"},
+	"Diner de famille insoutenable":        []string{"Psychologique", "Stratégie"},
+	"Plus de PQ dans les toilettes":        []string{"Horreur", "Santé"},
+	"En plein dans la Friendzone":          []string{"Amour", "Horreur"},
+}
+
+//Theme instanciate a themeService
 func Theme(ctx *context.AppContext) *themeService {
 	t := &model.Theme{}
 	themes := []*model.Theme{}
@@ -60,4 +73,9 @@ func (ts *themeService) LoadFromFile() ([]*model.Theme, error) {
 		themes = append(themes, &model.Theme{Theme: theme})
 	}
 	return themes, nil
+}
+
+// DefineTheme Define a main and secondary theme for a transaction
+func (ts *themeService) DefineTheme(t *model.Transaction) {
+	t.Game.Themes = themeByGame[t.Game.Nom]
 }

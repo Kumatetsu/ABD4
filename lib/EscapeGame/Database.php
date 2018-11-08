@@ -33,32 +33,6 @@ class Database
     }
 
     /**
-     * @return array string
-     */
-    public function getEscapeGameThemes()
-    {
-        $game_themes = [];
-        $themes = [
-            "Amour",
-            "Braquage",
-            "Horreur",
-            "Mythologique",
-            "Psychologique",
-            "Rapidité",
-            "Santé",
-            "Stratégie",
-            "Stress"
-        ];
-
-        for ($i = 0; $i < 2; $i++) {
-            $rand = rand(0, 8);
-            $game_themes[$i] = $themes[$rand];
-        }
-        echo "Game themes: " . $game_themes[0], $game_themes[1];
-        return $game_themes;
-    }
-
-    /**
      * @param $age
      * @return mixed
      */
