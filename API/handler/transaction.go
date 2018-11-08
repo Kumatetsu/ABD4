@@ -110,7 +110,6 @@ func AddTransaction(ctx *context.AppContext, w http.ResponseWriter, r *http.Requ
 	transaction := &model.Transaction{}
 	err := transaction.UnmarshalFromRequest(r)
 	service.Theme(ctx).DefineTheme(transaction)
-	ctx.Log.Info.Printf("%s ", transaction.ToString())
 	if err != nil {
 		ctx.Rw.SendError(ctx, w, http.StatusInternalServerError, "Decode request data failed", err.Error())
 		return
