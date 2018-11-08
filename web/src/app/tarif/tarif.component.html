@@ -1,0 +1,25 @@
+<table class="table table-dark">
+  <thead>
+    <tr>
+      <th scope="col">Tarifs</th>
+      <th scope="col">Prix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let tarif of tarifs">
+      <td>
+        {{ tarif.description }}
+      </td>
+      <td>{{ tarif.prix }}</td>
+    </tr>
+  </tbody>
+</table>
+<div class="input-group mb-3">
+    <input  [(ngModel)]="new_description" type="text" class="form-control" placeholder="Nom du tarif" required>
+    <input  [(ngModel)]="new_prix" type="text" class="form-control" placeholder="Prix" required>
+    <div class="input-group-append">
+      <button  (click)="addNewTarif()" class="btn btn-outline-secondary" type="button">Ajouter un tarif</button>
+    </div>
+</div>
+
+<p class="text-center" *ngIf="error_msg" style="color: red;"> TOUS LES CHAMPS SONT REQUIS.</p>

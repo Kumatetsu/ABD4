@@ -1,15 +1,13 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { WelcomeComponent } from './welcome/welcome/welcome.component';
-import { ContactComponent } from './contact/contact/contact.component';
-import { ServpageComponent } from './servpage/servpage/servpage.component';
+import { TarifComponent } from './tarif/tarif.component';
+import { ThemeComponent } from './theme/theme.component';
 
 const routes: Routes = [
-  { path: 'welcome', component: WelcomeComponent },
-  { path: 'contact', component: ContactComponent },
-  { path: 'service', component: ServpageComponent },
-  {path: '**', redirectTo: 'welcome', pathMatch: 'full'},
-  {path: '', redirectTo: 'welcome',  pathMatch: 'full'}
+  { path: 'tarif', component: TarifComponent },
+  { path: 'theme', component: ThemeComponent },
+  {path: '**', redirectTo: 'tarif', pathMatch: 'full'},
+  {path: '', redirectTo: 'tarif',  pathMatch: 'full'}
 ];
 @NgModule({
   imports: [
